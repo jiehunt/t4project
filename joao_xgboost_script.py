@@ -97,6 +97,9 @@ params = {'eta': 0.3,
           'eval_metric': 'auc',
           'nthread':8,
           'random_state': 99,
+	  'gpu_id': 0,
+	  'max_bin': 16,
+	  'tree_method':'gpu_hist',
           'silent': True}
 
 
