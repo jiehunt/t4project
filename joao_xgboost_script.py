@@ -12,9 +12,10 @@ from xgboost import plot_importance
 import matplotlib.pyplot as plt
 
 # Change this for validation with 10% from train
-is_valid = False
+# is_valid = False
+is_valid = True
 
-path = '../input/'
+path = './input/'
 
 def timeFeatures(df):
     # Make some new features with click_time column
@@ -40,7 +41,7 @@ dtypes = {
         }
 
 # Read the last lines because they are more impacting in training than the starting lines
-train = pd.read_csv(path+"train.csv", skiprows=range(1,122903891), nrows=62000000, usecols=train_columns, dtype=dtypes)
+train = pd.read_csv(path+"train.csv", skiprows=range(1,122903891), nrows=100000000, usecols=train_columns, dtype=dtypes)
 test = pd.read_csv(path+"test.csv", usecols=test_columns, dtype=dtypes)
 
 print('[{}] Finished to load data'.format(time.time() - start_time))
@@ -126,8 +127,8 @@ gc.collect()
 print('[{}] Finish XGBoost Training'.format(time.time() - start_time))
 
 # Plot the feature importance from xgboost
-plot_importance(model)
-plt.gcf().savefig('feature_importance_xgb.png')
+# plot_importance(model)
+# plt.gcf().savefig('feature_importance_xgb.png')
 
 # Load the test for predict
 test = pd.read_csv(path+"test.csv", usecols=test_columns, dtype=dtypes)
