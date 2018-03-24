@@ -2101,7 +2101,7 @@ if __name__ == '__main__':
     # app_tune_stack()
     # app_rank()
     # app_stack()
-    app_stack_2()
+    # app_stack_2()
 
     # peter_bestk_lgb()
     # print ("goto glove nbsvm")
