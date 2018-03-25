@@ -158,7 +158,7 @@ def f_get_train_test_data(data_set, feature_type):
         # train['click_hour'] = pd.to_datetime(train.attributed_time).dt.hour.astype('uint8')
         # train['click_day'] = pd.to_datetime(train.attributed_time).dt.day.astype('uint8')
 
-    with timer('Computing the number of channels associated with... '):
+    with timer('Computing the number of channels associated with ip day hour... '):
         n_chans = train[['ip','day','hour','channel']].groupby(by=['ip','day',
                 'hour'])[['channel']].count().reset_index().rename(columns={'channel': 'n_channels'})
         train = train.merge(n_chans, on=['ip','day','hour'], how='left')
@@ -166,7 +166,7 @@ def f_get_train_test_data(data_set, feature_type):
         del n_chans
         gc.collect()
 
-    with timer('Computing the number of channels associated with ...'):
+    with timer('Computing the number of channels associated with ip app...'):
         n_chans = train[['ip','app', 'channel']].groupby(by=['ip',
                 'app'])[['channel']].count().reset_index().rename(columns={'channel': 'ip_app_count'})
         train = train.merge(n_chans, on=['ip','app'], how='left')
@@ -174,7 +174,7 @@ def f_get_train_test_data(data_set, feature_type):
         del n_chans
         gc.collect()
 
-    with timer('Computing the number of channels associated with '):
+    with timer('Computing the number of channels associated with ip app os...'):
         n_chans = train[['ip','app', 'os', 'channel']].groupby(by=['ip', 'app',
                 'os'])[['channel']].count().reset_index().rename(columns={'channel': 'ip_app_os_count'})
         train = train.merge(n_chans, on=['ip','app', 'os'], how='left')
@@ -183,7 +183,7 @@ def f_get_train_test_data(data_set, feature_type):
         gc.collect()
 
     if feature_type == 'andy_doufu':
-        with timer('Computing the number of channels associated with '):
+        with timer('Computing the IP associated with app channel...'):
             n_chans = train[['ip','app', 'channel']].groupby(by=['app',
                     'channel'])[['ip']].count().reset_index().rename(columns={'ip': 'app_channel_count'})
             train = train.merge(n_chans, on=['app', 'channel'], how='left')
