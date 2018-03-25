@@ -101,7 +101,7 @@ def h_rank(predict_list):
 # Feature
 """"""""""""""""""""""""""""""
 
-def f_get_train_test_data(data_set):
+def f_get_train_test_data(data_set, feature_type):
 
     path_train ='./input/train.csv'
     path_test = './input/test.csv'
@@ -181,6 +181,16 @@ def f_get_train_test_data(data_set):
         train['ip_app_os_count'] = train['ip_app_os_count'].astype('uint16')
         del n_chans
         gc.collect()
+
+    if feature_type == 'andy_doufu':
+        with timer('Computing the number of channels associated with '):
+            n_chans = train[['ip','app', 'channel']].groupby(by=['app',
+                    'channel'])[['ip']].count().reset_index().rename(columns={'ip': 'app_channel_count'})
+            train = train.merge(n_chans, on=['app', 'channel'], how='left')
+            train['app_channel_count'] = train['app_channel_count'].astype('uint16')
+            del n_chans
+            gc.collect()
+
 
     groupby(['app','channel'])
     test = train[len_train:].copy().drop( target, axis=1 )
@@ -283,7 +293,10 @@ def m_old_lgb_model(csr_trn, csr_sub, train, test, feature_type):
 
 def m_lgb_model(train, test):
 
-    predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    if feature_type == 'andy_org':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    elif feature_type == 'andy_doufu':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
     target = 'is_attributed'
@@ -361,7 +374,10 @@ def m_lgb_model(train, test):
 
 def m_xgb_model(train, test):
 
-    predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    if feature_type == 'andy_org':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    elif feature_type == 'andy_doufu':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
     target = 'is_attributed'
@@ -620,13 +636,13 @@ if __name__ == '__main__':
 
     data_set = 'set1' # set0 set1 setfull
     model_type = 'xgb' # xgb lgb
-    feature_type = 'org_andy'
+    feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set)
     with timer("goto train..."):
         if model_type == 'lgb':
-            pred = m_lgb_model(train, test)
+            pred = m_lgb_model(train, test, feature_type)
         elif model_type == 'xgb':
-            pred = m_xgb_model(train, test)
+            pred = m_xgb_model(train, test, feature_type)
 
     outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
     m_make_single_submission(outfile, pred)
