@@ -56,6 +56,7 @@ from contextlib import contextmanager
 
 from collections import defaultdict
 
+import gc
 import lightgbm as lgb
 import xgboost as xgb
 from xgboost.sklearn import XGBClassifier
@@ -82,6 +83,8 @@ def timer(name):
     t0 = time.time()
     yield
     print(f'[{name}] done in {time.time() - t0:.0f} s')
+
+start_time = time.time()
 
 def h_rank(predict_list):
 
@@ -124,6 +127,8 @@ def f_get_train_test_data(data_set):
             train = pd.read_csv(path_train, skiprows=skip, dtype=dtypes, header=0, usecols=train_cols)
         elif data_set == 'set0':
             train = pd.read_csv(path_train, nrows=skip, dtype=dtypes, header=0, usecols=train_cols)
+        elif data_set == 'setfull':
+            train = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
     with timer('Loading the test data...'):
         test = pd.read_csv(path_test, dtype=dtypes, header=0, usecols=test_cols)
 
@@ -188,7 +193,7 @@ def f_get_train_test_data(data_set):
 """"""""""""""""""""""""""""""
 # Model
 """"""""""""""""""""""""""""""
-def m_lgb_model(csr_trn, csr_sub, train, test, feature_type):
+def m_old_lgb_model(csr_trn, csr_sub, train, test, feature_type):
 
     class_names = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
     # Set LGBM parameters
@@ -273,6 +278,125 @@ def m_lgb_model(csr_trn, csr_sub, train, test, feature_type):
 
         pred = pred/splits
         return pred
+
+def m_lgb_model(train, test)
+
+    predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+
+    target = 'is_attributed'
+
+    params = {
+        'boosting_type': 'gbdt',
+        'objective': 'binary',
+        'metric': 'auc',
+        'learning_rate': 0.1,
+        'num_leaves': 255,
+        'max_depth': 8,
+        'min_child_samples': 100,
+        'max_bin': 100,
+        'subsample': 0.7,
+        'subsample_freq': 1,
+        'colsample_bytree': 0.7,
+        'min_child_weight': 0,
+        'subsample_for_bin': 200000,
+        'min_split_gain': 0,
+        'reg_alpha': 0,
+        'reg_lambda': 0,
+        'nthread': 4,
+        'verbose': 0,
+        'scale_pos_weight':99,
+        "device": "gpu",
+        "gpu_platform_id": 0,
+        "gpu_device_id": 0,
+        }
+
+    len_train = len(train)
+    r = 0.1 # the fraction of the train data to be used for validation
+    val = train[(len_train-round(r*len_train)):len_train]
+    print('The size of the validation set is ', len(val))
+
+    train = train[:(len_train-round(r*len_train))]
+    print('The size of the train set is ', len(train))
+
+    dtrain = lgb.Dataset(train[predictors].values, label=train[target].values,
+                          feature_name=predictors,
+                          categorical_feature=categorical
+                          )
+    del train
+    gc.collect()
+
+    dvalid = lgb.Dataset(val[predictors].values, label=val[target].values,
+                          feature_name=predictors,
+                          categorical_feature=categorical
+                          )
+    del val
+    gc.collect()
+
+
+    dvalid = lgb.Dataset(val[predictors].values, label=val[target].values,
+                          feature_name=predictors,
+                          categorical_feature=categorical
+                          )
+    del val
+    gc.collect()
+
+    evals_results = {}
+
+    lgb_model = lgb.train(params,
+                     dtrain,
+                     valid_sets=[dtrain, dvalid],
+                     valid_names=['train','valid'],
+                     evals_result=evals_results,
+                     num_boost_round=1000,
+                     early_stopping_rounds=50,
+                     verbose_eval=True,
+                     feval=None)
+
+    pred = lgb_model.predict(test[predictors], num_iteration=lgb_model.best_iteration)
+
+    return pred
+
+def m_xgb_model(train, test)
+
+    predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+
+    target = 'is_attributed'
+    Y = train[target]
+    params = {'eta': 0.3,
+          'tree_method': "hist",
+          'grow_policy': "lossguide",
+          'max_leaves': 1400,
+          'max_depth': 0,
+          'subsample': 0.9,
+          'colsample_bytree': 0.7,
+          'colsample_bylevel':0.7,
+          'min_child_weight':0,
+          'alpha':4,
+          'objective': 'binary:logistic',
+          'scale_pos_weight':9,
+          'eval_metric': 'auc',
+          'nthread':8,
+          'random_state': 99,
+            'gpu_id': 0,
+            'max_bin': 16,
+            'tree_method':'gpu_hist',
+          'silent': True}
+    X_train, X_valid, Y_train, Y_valid = train_test_split(train, Y, test_size=0.1, random_state=99)
+    dtrain = xgb.DMatrix(X_train, Y_train)
+    dvalid = xgb.DMatrix(X_valid, Y_valid)
+    del X_train, Y_train, X_valid, Y_valid
+    gc.collect()
+
+    dtest = xgb.DMatrix(test)
+
+    watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
+    model = xgb.train(params, dtrain, 200, watchlist, maximize=True, early_stopping_rounds = 25, verbose_eval=5)
+
+    pred = model.predict(dtest[predictors], ntree_limit=model.best_ntree_limit)
+
+    return pred
 
 """"""""""""""""""""""""""""""
 # Stacking
@@ -481,14 +605,28 @@ def h_tuning_lgb(train, train_target,tune_dict, param_test):
 """"""""""""""""""""""""""""""
 # Ganerate Result
 """"""""""""""""""""""""""""""
-def m_make_single_submission(m_infile, m_outfile, m_pred):
-    list_classes = ["toxic", "severe_toxic", "obscene", "threat", "insult", "identity_hate"]
-    submission = pd.read_csv(m_infile)
-    submission[list_classes] = (m_pred)
-    submission.to_csv(m_outfile, index = False)
+def m_make_single_submission(outfile, m_pred):
+    submit = pd.read_csv('./input/test.csv', dtype='int', usecols=['click_id'])
+    submit['is_attributed'] = pred
+    submit.to_csv(outfile, index=False)
 
 """"""""""""""""""""""""""""""
 # Main Func
 """"""""""""""""""""""""""""""
 
 if __name__ == '__main__':
+
+    data_set = 'set0' # set0 set1 setfull
+    model_type = 'xgb' # xgb lgb
+    feature_type = 'org_andy'
+    train, test = f_get_train_test_data(data_set)
+    with timer("goto train..."):
+        if model_type == 'lgb':
+            pred = m_lgb_model(train, test)
+        elif model_type == 'xgb':
+            pred = m_xgb_model(train, test)
+
+    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    m_make_single_submission(outfile, pred)
+
+
