@@ -630,4 +630,5 @@ if __name__ == '__main__':
     outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
     m_make_single_submission(outfile, pred)
 
+    print('[{}] All Done!!!'.format(time.time() - start_time))
 
