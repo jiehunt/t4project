@@ -279,7 +279,7 @@ def m_old_lgb_model(csr_trn, csr_sub, train, test, feature_type):
         pred = pred/splits
         return pred
 
-def m_lgb_model(train, test)
+def m_lgb_model(train, test):
 
     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
@@ -357,7 +357,7 @@ def m_lgb_model(train, test)
 
     return pred
 
-def m_xgb_model(train, test)
+def m_xgb_model(train, test):
 
     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
