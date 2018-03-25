@@ -155,8 +155,8 @@ def f_get_train_test_data(data_set):
         train.drop( 'click_time', axis=1, inplace=True )
         gc.collect()
 
-        train['click_hour'] = pd.to_datetime(train.attributed_time).dt.hour.astype('uint8')
-        train['click_day'] = pd.to_datetime(train.attributed_time).dt.day.astype('uint8')
+        # train['click_hour'] = pd.to_datetime(train.attributed_time).dt.hour.astype('uint8')
+        # train['click_day'] = pd.to_datetime(train.attributed_time).dt.day.astype('uint8')
 
     with timer('Computing the number of channels associated with... '):
         n_chans = train[['ip','day','hour','channel']].groupby(by=['ip','day',
