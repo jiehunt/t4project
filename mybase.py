@@ -120,13 +120,14 @@ def f_get_train_test_data(data_set):
     train_cols = ['ip', 'app', 'device', 'os', 'channel', 'click_time', 'is_attributed']
     test_cols = ['ip', 'app', 'device', 'os', 'channel', 'click_time']
 
-    skip = range(1, 100000000)
+    SKIP_ROWS = 100000000
+    skip = range(1, SKIP_ROWS)
 
     with timer('Loading the training data...'):
         if data_set == 'set1':
             train = pd.read_csv(path_train, skiprows=skip, dtype=dtypes, header=0, usecols=train_cols)
         elif data_set == 'set0':
-            train = pd.read_csv(path_train, nrows=skip, dtype=dtypes, header=0, usecols=train_cols)
+            train = pd.read_csv(path_train, nrows=SKIP_ROWS, dtype=dtypes, header=0, usecols=train_cols)
         elif data_set == 'setfull':
             train = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
     with timer('Loading the test data...'):
@@ -616,7 +617,7 @@ def m_make_single_submission(outfile, m_pred):
 
 if __name__ == '__main__':
 
-    data_set = 'set0' # set0 set1 setfull
+    data_set = 'set1' # set0 set1 setfull
     model_type = 'xgb' # xgb lgb
     feature_type = 'org_andy'
     train, test = f_get_train_test_data(data_set)
