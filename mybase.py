@@ -149,8 +149,8 @@ def f_get_train_test_data(data_set):
 
 
     with timer("Creating new time features: 'hour' and 'day'..."):
-        train['click_hour'] = pd.to_datetime(train.click_time).dt.hour.astype('uint8')
-        train['click_day'] = pd.to_datetime(train.click_time).dt.day.astype('uint8')
+        train['hour'] = pd.to_datetime(train.click_time).dt.hour.astype('uint8')
+        train['day'] = pd.to_datetime(train.click_time).dt.day.astype('uint8')
 
         train.drop( 'click_time', axis=1, inplace=True )
         gc.collect()
@@ -182,6 +182,7 @@ def f_get_train_test_data(data_set):
         del n_chans
         gc.collect()
 
+    groupby(['app','channel'])
     test = train[len_train:].copy().drop( target, axis=1 )
     train = train[:len_train]
     print('The size of the test set is ', len(test))
