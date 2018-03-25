@@ -191,8 +191,6 @@ def f_get_train_test_data(data_set, feature_type):
             del n_chans
             gc.collect()
 
-
-    groupby(['app','channel'])
     test = train[len_train:].copy().drop( target, axis=1 )
     train = train[:len_train]
     print('The size of the test set is ', len(test))
