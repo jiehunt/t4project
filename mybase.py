@@ -370,7 +370,7 @@ def m_lgb_model(train, test):
 
     return pred
 
-def m_xgb_model(train, test):
+def m_xgb_model(train, test, feature_type):
 
     if feature_type == 'andy_org':
         predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
