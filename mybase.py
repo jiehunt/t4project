@@ -52,6 +52,7 @@ from keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateSchedule
 
 from keras.optimizers import Adam, RMSprop
 
+from bayes_opt import BayesianOptimization
 from contextlib import contextmanager
 
 from collections import defaultdict
@@ -626,6 +627,96 @@ def h_tuning_lgb(train, train_target,tune_dict, param_test):
 
     return gsearch.best_score_, gsearch.best_params_
 
+# Comment out any parameter you don't want to test
+
+def XGB_CV(
+          max_depth,
+          gamma,
+          min_child_weight,
+          max_delta_step,
+          subsample,
+          colsample_bytree
+         ):
+      # 'learning_rate' : 0.1,
+      #  'n_estimators'  : 1000,
+      #  'max_depth' : 5,
+      #  'min_child_weight':1,
+      #  'gamma':0,
+      #  'subsample':0.8,
+      #  'colsample_bytree':0.8,
+      #  'scale_pos_weight':1,
+      #  'reg_alpha':0,
+      #  'reg_lambda':0,
+      #  'booster':'gbtree', # 'gbtree','gblinear', 'dart'
+
+    global AUCbest
+    global ITERbest
+
+#
+# Define all XGboost parameters
+#
+
+    paramt = {
+              'booster' : 'gbtree',
+              'max_depth' : int(max_depth),
+              'gamma' : gamma,
+              'eta' : 0.1,
+              'objective' : 'binary:logistic',
+              'nthread' : 4,
+              'silent' : True,
+              'eval_metric': 'auc',
+              'subsample' : max(min(subsample, 1), 0),
+              'colsample_bytree' : max(min(colsample_bytree, 1), 0),
+              'min_child_weight' : min_child_weight,
+              'max_delta_step' : int(max_delta_step),
+              'seed' : 1001
+              'gpu_id': 0,
+              'max_bin': 16,
+              'tree_method':'gpu_hist',
+              }
+
+    folds = 5
+    cv_score = 0
+
+    print("\n Search parameters (%d-fold validation):\n %s" % (folds, paramt), file=log_file )
+    log_file.flush()
+
+    xgbc = xgb.cv(
+                    paramt,
+                    dtrain,
+                    num_boost_round = 20000,
+                    stratified = True,
+                    nfold = folds,
+#                    verbose_eval = 10,
+                    early_stopping_rounds = 100,
+                    metrics = 'auc',
+                    show_stdv = True
+               )
+
+# This line would have been on top of this section
+#    with capture() as result:
+
+# After xgb.cv is done, this section puts its output into log file. Train and validation scores
+# are also extracted in this section. Note the "diff" part in the printout below, which is the
+# difference between the two scores. Large diff values may indicate that a particular set of
+# parameters is overfitting, especially if you check the CV portion of it in the log file and find
+# out that train scores were improving much faster than validation scores.
+
+#    print('', file=log_file)
+#    for line in result[1]:
+#        print(line, file=log_file)
+#    log_file.flush()
+
+    val_score = xgbc['test-auc-mean'].iloc[-1]
+    train_score = xgbc['train-auc-mean'].iloc[-1]
+    print(' Stopped after %d iterations with train-auc = %f val-auc = %f ( diff = %f ) train-gini = %f val-gini = %f' % ( len(xgbc), train_score, val_score, (train_score - val_score), (train_score*2-1),
+(val_score*2-1)) )
+    if ( val_score > AUCbest ):
+        AUCbest = val_score
+        ITERbest = len(xgbc)
+
+    return (val_score*2) - 1
+
 def app_tune_xgb(train, feature_type):
 
     if feature_type == 'andy_org':
@@ -726,6 +817,9 @@ def m_make_single_submission(outfile, m_pred):
 """"""""""""""""""""""""""""""
 # Main Func
 """"""""""""""""""""""""""""""
+log_file = open('XGB-run-01-v1-full.log', 'a')
+AUCbest = -1.
+ITERbest = 0
 
 if __name__ == '__main__':
 
@@ -738,8 +832,49 @@ if __name__ == '__main__':
     print (test.info())
     # pred =  app_train(train, test, model_type,feature_type):
 
+    if feature_type == 'andy_org':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    elif feature_type == 'andy_doufu':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
-    app_tune_xgb(train, feature_type)
+    target = 'is_attributed'
+    Y = train[target]
+    train = train[predictors]
+
+    dtrain = xgb.DMatrix(train, label=Y)
+
+    XGB_BO = BayesianOptimization(XGB_CV, {
+                                     'max_depth': (2, 12),
+                                     'gamma': (0.001, 10.0),
+                                     'min_child_weight': (0, 20),
+                                     'max_delta_step': (0, 10),
+                                     'subsample': (0.4, 1.0),
+                                     'colsample_bytree' :(0.4, 1.0)
+                                    })
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore')
+        XGB_BO.maximize(init_points=2, n_iter=5, acq='ei', xi=0.0)
+
+    print('-'*130)
+    print('Final Results')
+    print('Maximum XGBOOST value: %f' % XGB_BO.res['max']['max_val'])
+    print('Best XGBOOST parameters: ', XGB_BO.res['max']['max_params'])
+    print('-'*130, file=log_file)
+    print('Final Result:', file=log_file)
+    print('Maximum XGBOOST value: %f' % XGB_BO.res['max']['max_val'], file=log_file)
+    print('Best XGBOOST parameters: ', XGB_BO.res['max']['max_params'], file=log_file)
+    log_file.flush()
+    log_file.close()
+
+    history_df = pd.DataFrame(XGB_BO.res['all']['params'])
+    history_df2 = pd.DataFrame(XGB_BO.res['all']['values'])
+    history_df = pd.concat((history_df, history_df2), axis=1)
+    history_df.rename(columns = { 0 : 'gini'}, inplace=True)
+    history_df['AUC'] = ( history_df['gini'] + 1 ) / 2
+    history_df.to_csv('bayesian_xgb_grid.csv')
+
+    # app_tune_xgb(train, feature_type)
 
     # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
     # m_make_single_submission(outfile, pred)
