@@ -379,8 +379,8 @@ def m_xgb_model(train, test, feature_type):
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
     target = 'is_attributed'
-    train = train[predictors]
     Y = train[target]
+    train = train[predictors]
     params = {'eta': 0.3,
           'tree_method': "hist",
           'grow_policy': "lossguide",
