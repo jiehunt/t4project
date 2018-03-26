@@ -381,7 +381,7 @@ def m_xgb_model(train, test, feature_type):
     target = 'is_attributed'
     Y = train[target]
     train = train[predictors]
-    test = test[predictores]
+    test = test[predictors]
     params = {'eta': 0.3,
           'tree_method': "hist",
           'grow_policy': "lossguide",
