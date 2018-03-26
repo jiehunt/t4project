@@ -379,6 +379,7 @@ def m_xgb_model(train, test, feature_type):
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
     target = 'is_attributed'
+    train = train[predictors]
     Y = train[target]
     params = {'eta': 0.3,
           'tree_method': "hist",
@@ -400,6 +401,8 @@ def m_xgb_model(train, test, feature_type):
             'tree_method':'gpu_hist',
           'silent': True}
     X_train, X_valid, Y_train, Y_valid = train_test_split(train, Y, test_size=0.1, random_state=99)
+    print (X_train.info())
+    print (Y_train.info())
     dtrain = xgb.DMatrix(X_train, Y_train)
     dvalid = xgb.DMatrix(X_valid, Y_valid)
     del X_train, Y_train, X_valid, Y_valid
