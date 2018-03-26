@@ -581,13 +581,13 @@ def h_tuning_xgb(train, train_target,tune_dict, param_test):
                                                     scale_pos_weight=param_dict['scale_pos_weight'],
                                                     reg_alpha=param_dict['reg_alpha'],
                                                     reg_lambda=param_dict['reg_lambda'],
-                                                    gpu_id=0,
-                                                    max_bin = 16,
-                                                    tree_method = 'gpu_hist',
+                                                    # gpu_id=0,
+                                                    # max_bin = 16,
+                                                    # tree_method = 'gpu_hist',
                                                     objective='binary:logistic',
                                                     nthread=4,
                                                     seed=27),
-                                                    param_grid=param_test, scoring='roc_auc', n_jobs=4, iid=False, cv=5, verbose=1)
+                                                    param_grid=param_test, scoring='roc_auc', n_jobs=1, iid=False, cv=5, verbose=1)
 
     with timer("goto serch max_depth and min_child_wight"):
         gsearch.fit(train, train_target)
@@ -625,10 +625,17 @@ def h_tuning_lgb(train, train_target,tune_dict, param_test):
 
     return gsearch.best_score_, gsearch.best_params_
 
-def app_tune_xgb(train, test, feature_type):
+def app_tune_xgb(train, feature_type):
+
+    if feature_type == 'andy_org':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    elif feature_type == 'andy_doufu':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
 
     target = 'is_attributed'
     train_target = train[target]
+    train = train[predictors]
+
     param_dict_org = {
        'learning_rate' : 0.1,
        'n_estimators'  : 1000,
@@ -667,6 +674,7 @@ def app_tune_xgb(train, test, feature_type):
         param_test4,
         param_test5,
     ]
+
 
     with timer ("Serching for best "):
         param_dict = param_dict_org
