@@ -381,6 +381,7 @@ def m_xgb_model(train, test, feature_type):
     target = 'is_attributed'
     Y = train[target]
     train = train[predictors]
+    test = test[predictores]
     params = {'eta': 0.3,
           'tree_method': "hist",
           'grow_policy': "lossguide",
@@ -411,7 +412,7 @@ def m_xgb_model(train, test, feature_type):
     watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
     model = xgb.train(params, dtrain, 200, watchlist, maximize=True, early_stopping_rounds = 25, verbose_eval=5)
 
-    pred = model.predict(dtest[predictors], ntree_limit=model.best_ntree_limit)
+    pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
 
     return pred
 
