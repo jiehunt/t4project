@@ -584,7 +584,7 @@ def h_tuning_xgb(train, train_target,tune_dict, param_test):
                                                     # gpu_id=0,
                                                     # max_bin = 16,
                                                     # tree_method = 'gpu_hist',
-                                                    tree_method = 'hist',
+                                                    tree_method='hist',
                                                     objective='binary:logistic',
                                                     nthread=4,
                                                     seed=27),
