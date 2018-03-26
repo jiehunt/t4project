@@ -649,7 +649,6 @@ def app_tune_xgb(train, feature_type):
        'reg_alpha':0,
        'reg_lambda':0,
        'booster':'gbtree', # 'gbtree','gblinear', 'dart'
-       'tree_method' = 'hist'
     }
 
     param_test1 = {
