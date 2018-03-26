@@ -636,6 +636,9 @@ if __name__ == '__main__':
     model_type = 'xgb' # xgb lgb
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
+
+    print (train.info())
+    print (test.info())
     with timer("goto train..."):
         if model_type == 'lgb':
             pred = m_lgb_model(train, test, feature_type)
