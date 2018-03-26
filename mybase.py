@@ -558,12 +558,16 @@ def h_tuning_xgb(train, train_target,tune_dict, param_test):
     param_dict = {
        'learning_rate' : 0.1,
        'n_estimators'  : 1000,
-       'max_depth' : 4,
-       'min_child_weight':8,
+       'max_depth' : 5,
+       'min_child_weight':1,
        'gamma':0,
        'subsample':0.8,
        'colsample_bytree':0.8,
+       'scale_pos_weight':1,
        'reg_alpha':0,
+       'reg_lambda':0,
+       'booster':'gbtree', # 'gbtree','gblinear', 'dart'
+
     }
     param_dict = tune_dict
 
@@ -574,21 +578,23 @@ def h_tuning_xgb(train, train_target,tune_dict, param_test):
                                                     gamma=param_dict['gamma'],
                                                     subsample=param_dict['subsample'],
                                                     colsample_bytree=param_dict['colsample_bytree'],
+                                                    scale_pos_weight=param_dict['scale_pos_weight'],
                                                     reg_alpha=param_dict['reg_alpha'],
+                                                    reg_lambda=param_dict['reg_lambda'],
                                                     gpu_id=0,
                                                     max_bin = 16,
                                                     tree_method = 'gpu_hist',
                                                     objective='binary:logistic',
-                                                    nthread=4, scale_pos_weight=1,
+                                                    nthread=4,
                                                     seed=27),
-                                                    param_grid=param_test, scoring='roc_auc', n_jobs=4, iid=False, cv=5, verbose=2)
+                                                    param_grid=param_test, scoring='roc_auc', n_jobs=4, iid=False, cv=5, verbose=1)
 
     with timer("goto serch max_depth and min_child_wight"):
         gsearch.fit(train, train_target)
         print (gsearch.grid_scores_ )
         print (gsearch.best_params_ )
         print (gsearch.best_score_)
-        return gsearch.best_params_
+        return gsearch.best_score_, gsearch.best_params_
 
 
 def h_tuning_lgb(train, train_target,tune_dict, param_test):
@@ -619,6 +625,86 @@ def h_tuning_lgb(train, train_target,tune_dict, param_test):
 
     return gsearch.best_score_, gsearch.best_params_
 
+def app_tune_xgb(train, test, feature_type):
+
+    target = 'is_attributed'
+    train_target = train[target]
+    param_dict_org = {
+       'learning_rate' : 0.1,
+       'n_estimators'  : 1000,
+       'max_depth' : 5,
+       'min_child_weight':1,
+       'gamma':0,
+       'subsample':0.8,
+       'colsample_bytree':0.8,
+       'scale_pos_weight':1,
+       'reg_alpha':0,
+       'reg_lambda':0,
+       'booster':'gbtree', # 'gbtree','gblinear', 'dart'
+    }
+
+    param_test1 = {
+        'max_depth': [3,10, 2],
+        'min_child_weight': [i for i in range(1,6, 2)]
+    }
+    param_test2 = {
+        'gamma': [i / 10 for i in range(0, 10)],
+    }
+    param_test3 = {
+        'colsample_bytree': [i / 100.0 for i in range(20, 100, 5)],
+        'subsample':[i/10.0 for i in range(6,10)]
+    }
+    param_test4 = {
+        'reg_alptha': [ i / 10 for i in range(0, 10)]
+    }
+    param_test5 = {
+        'reg_lambda': [ i / 10 for i in range(0, 10)]
+    }
+    param_set = [
+        param_test1,
+        param_test2,
+        param_test3,
+        param_test4,
+        param_test5,
+    ]
+
+    with timer ("Serching for best "):
+        param_dict = param_dict_org
+        print (param_dict)
+        bscores = []
+        for param in param_set:
+            with timer("goto serching ... ... "):
+                score , best_param = h_tuning_xgb(train, train_target, param_dict, param)
+
+            # time.sleep(5)
+            print (type(best_param))
+            for key in param_dict:
+                for key2 in best_param:
+                    if key == key2:
+                        param_dict[key] = best_param[key2]
+                        print ("change %s to %f" % (key, best_param[key2]))
+
+            one_scroe = {'score':score, 'param':param_dict}
+            bscores.append(one_scroe)
+        pfile = 'param_'+str(feature_type) + '.csv'
+        with open(pfile, 'w') as f:
+            w = csv.DictWriter(f, param_dict.keys())
+            w.writeheader()
+            w.writerow(param_dict)
+
+    print (param_dict)
+
+    return
+
+
+def app_train(train, test, model_type,feature_type):
+
+    with timer("goto train..."):
+        if model_type == 'lgb':
+            pred = m_lgb_model(train, test, feature_type)
+        elif model_type == 'xgb':
+            pred = m_xgb_model(train, test, feature_type)
+    return pred
 
 """"""""""""""""""""""""""""""
 # Ganerate Result
@@ -626,7 +712,7 @@ def h_tuning_lgb(train, train_target,tune_dict, param_test):
 def m_make_single_submission(outfile, m_pred):
     submit = pd.read_csv('./input/test.csv', dtype='int', usecols=['click_id'])
     submit['is_attributed'] = pred
-    submit.to_csv(outfile, index=False)
+    submit.to_csv(outfile,float_format='%.3f', index=False)
 
 """"""""""""""""""""""""""""""
 # Main Func
@@ -641,14 +727,14 @@ if __name__ == '__main__':
 
     print (train.info())
     print (test.info())
-    with timer("goto train..."):
-        if model_type == 'lgb':
-            pred = m_lgb_model(train, test, feature_type)
-        elif model_type == 'xgb':
-            pred = m_xgb_model(train, test, feature_type)
+    # pred =  app_train(train, test, model_type,feature_type):
 
-    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    m_make_single_submission(outfile, pred)
+
+    app_tune_xgb(train, test,feature_type)
+
+    # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    # m_make_single_submission(outfile, pred)
+
 
     print('[{}] All Done!!!'.format(time.time() - start_time))
 
