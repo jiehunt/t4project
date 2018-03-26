@@ -738,7 +738,7 @@ if __name__ == '__main__':
     # pred =  app_train(train, test, model_type,feature_type):
 
 
-    app_tune_xgb(train, test,feature_type)
+    app_tune_xgb(train, feature_type)
 
     # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
     # m_make_single_submission(outfile, pred)
