@@ -383,7 +383,7 @@ def m_xgb_model(train, test, feature_type):
     train = train[predictors]
     test = test[predictors]
     params = {'eta': 0.3,
-          'tree_method': "hist",
+          'tree_method': "gpu_hist",
           'grow_policy': "lossguide",
           'max_leaves': 1400,
           'max_depth': 0,
@@ -584,10 +584,11 @@ def h_tuning_xgb(train, train_target,tune_dict, param_test):
                                                     # gpu_id=0,
                                                     # max_bin = 16,
                                                     # tree_method = 'gpu_hist',
+                                                    tree_method = 'hist',
                                                     objective='binary:logistic',
                                                     nthread=4,
                                                     seed=27),
-                                                    param_grid=param_test, scoring='roc_auc', n_jobs=1, iid=False, cv=5, verbose=1)
+                                                    param_grid=param_test, scoring='roc_auc', n_jobs=4, iid=False, cv=5, verbose=1)
 
     with timer("goto serch max_depth and min_child_wight"):
         gsearch.fit(train, train_target)
@@ -648,6 +649,7 @@ def app_tune_xgb(train, feature_type):
        'reg_alpha':0,
        'reg_lambda':0,
        'booster':'gbtree', # 'gbtree','gblinear', 'dart'
+       'tree_method' = 'hist'
     }
 
     param_test1 = {
