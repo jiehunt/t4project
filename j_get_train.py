@@ -28,6 +28,7 @@ def h_get_train():
             'channel'       : 'uint16',
             'is_attributed' : 'uint8',
             'click_id'      : 'uint32'
+            }
     # train = pd.read_csv(path_train, skiprows=skip, dtype=dtypes, header=0, usecols=train_cols)
     df = pd.read_csv(path_train, dtype=dtypes)
     df_1 = df[['is_attribeted'] > 0]
