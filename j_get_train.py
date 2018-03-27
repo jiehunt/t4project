@@ -53,4 +53,5 @@ def h_get_train():
 
     return
 
-
+if __name__ == '__main__':
+    h_get_train()
