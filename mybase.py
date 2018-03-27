@@ -70,6 +70,7 @@ warnings.filterwarnings('ignore')
 os.environ["OMP_NUM_THREADS"] = "4"
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
+log_file = open('XGB-run-01-v1-full.log', 'a')
 
 """"""""""""""""""""""""""""""
 # Help Function
@@ -131,6 +132,15 @@ def f_get_train_test_data(data_set, feature_type):
             train = pd.read_csv(path_train, nrows=SKIP_ROWS, dtype=dtypes, header=0, usecols=train_cols)
         elif data_set == 'setfull':
             train = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+        elif data_set == 'set01':
+            path_train ='./input/train_1.csv'
+            train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            path_train ='./input/train_0.csv'
+            train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            train = pd.concat([train_1, train_0])
+            del train_0, train_1
+            gc.collect()
+
     with timer('Loading the test data...'):
         test = pd.read_csv(path_test, dtype=dtypes, header=0, usecols=test_cols)
 
@@ -635,7 +645,10 @@ def XGB_CV(
           min_child_weight,
           max_delta_step,
           subsample,
-          colsample_bytree
+          colsample_bytree,
+          reg_alpha,
+          reg_lambda,
+          eta,
          ):
       # 'learning_rate' : 0.1,
       #  'n_estimators'  : 1000,
@@ -660,19 +673,23 @@ def XGB_CV(
               'booster' : 'gbtree',
               'max_depth' : int(max_depth),
               'gamma' : gamma,
-              'eta' : 0.1,
+              'eta' : float(eta),
               'objective' : 'binary:logistic',
               'nthread' : 4,
-              'silent' : True,
+              'silent' : False,
               'eval_metric': 'auc',
               'subsample' : max(min(subsample, 1), 0),
               'colsample_bytree' : max(min(colsample_bytree, 1), 0),
               'min_child_weight' : min_child_weight,
               'max_delta_step' : int(max_delta_step),
-              'seed' : 1001
+              'seed' : 1001,
+              'scale_pos_weight':9, # 40000000 : 480000
+              'reg_alpha':float(reg_alpha), # default 0
+              'reg_lambda':float(reg_lambda), # default 1
               'gpu_id': 0,
-              'max_bin': 16,
+              'max_bin':16,
               'tree_method':'gpu_hist',
+              # 'tree_method':'hist',
               }
 
     folds = 5
@@ -806,43 +823,7 @@ def app_train(train, test, model_type,feature_type):
             pred = m_xgb_model(train, test, feature_type)
     return pred
 
-""""""""""""""""""""""""""""""
-# Ganerate Result
-""""""""""""""""""""""""""""""
-def m_make_single_submission(outfile, m_pred):
-    submit = pd.read_csv('./input/test.csv', dtype='int', usecols=['click_id'])
-    submit['is_attributed'] = pred
-    submit.to_csv(outfile,float_format='%.3f', index=False)
-
-""""""""""""""""""""""""""""""
-# Main Func
-""""""""""""""""""""""""""""""
-log_file = open('XGB-run-01-v1-full.log', 'a')
-AUCbest = -1.
-ITERbest = 0
-
-if __name__ == '__main__':
-
-    data_set = 'set1' # set0 set1 setfull
-    model_type = 'xgb' # xgb lgb
-    feature_type = 'andy_org' # andy_org andy_doufu
-    train, test = f_get_train_test_data(data_set, feature_type)
-
-    print (train.info())
-    print (test.info())
-    # pred =  app_train(train, test, model_type,feature_type):
-
-    if feature_type == 'andy_org':
-        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
-    elif feature_type == 'andy_doufu':
-        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
-    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
-
-    target = 'is_attributed'
-    Y = train[target]
-    train = train[predictors]
-
-    dtrain = xgb.DMatrix(train, label=Y)
+def app_tune_xgb_bayesian(train, feature_type):
 
     XGB_BO = BayesianOptimization(XGB_CV, {
                                      'max_depth': (2, 12),
@@ -850,11 +831,14 @@ if __name__ == '__main__':
                                      'min_child_weight': (0, 20),
                                      'max_delta_step': (0, 10),
                                      'subsample': (0.4, 1.0),
-                                     'colsample_bytree' :(0.4, 1.0)
+                                     'colsample_bytree' :(0.4, 1.0),
+                                     'reg_alpha' :(0, 1.0),
+                                     'reg_lambda' :(0.1, 1.5),
+                                     'eta' :(0.1, 1.0)
                                     })
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
-        XGB_BO.maximize(init_points=2, n_iter=5, acq='ei', xi=0.0)
+        XGB_BO.maximize(init_points=2, n_iter=3, acq='ei', xi=0.0)
 
     print('-'*130)
     print('Final Results')
@@ -874,7 +858,47 @@ if __name__ == '__main__':
     history_df['AUC'] = ( history_df['gini'] + 1 ) / 2
     history_df.to_csv('bayesian_xgb_grid.csv')
 
+
+
+""""""""""""""""""""""""""""""
+# Ganerate Result
+""""""""""""""""""""""""""""""
+def m_make_single_submission(outfile, m_pred):
+    submit = pd.read_csv('./input/test.csv', dtype='int', usecols=['click_id'])
+    submit['is_attributed'] = pred
+    submit.to_csv(outfile,float_format='%.3f', index=False)
+
+""""""""""""""""""""""""""""""
+# Main Func
+""""""""""""""""""""""""""""""
+AUCbest = -1.
+ITERbest = 0
+
+if __name__ == '__main__':
+
+    data_set = 'set01' # set0 set1 setfull set01
+    model_type = 'xgb' # xgb lgb
+    feature_type = 'andy_org' # andy_org andy_doufu
+    train, test = f_get_train_test_data(data_set, feature_type)
+
+    print (train.info())
+    print (test.info())
+    # pred =  app_train(train, test, model_type,feature_type):
+
     # app_tune_xgb(train, feature_type)
+    if feature_type == 'andy_org':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    elif feature_type == 'andy_doufu':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+
+    target = 'is_attributed'
+    Y = train[target]
+    train = train[predictors]
+
+    dtrain = xgb.DMatrix(train, label=Y)
+
+    app_tune_xgb_bayesian(train, feature_type)
 
     # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
     # m_make_single_submission(outfile, pred)
