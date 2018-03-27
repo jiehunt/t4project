@@ -32,14 +32,14 @@ def h_get_train():
             }
     # train = pd.read_csv(path_train, skiprows=skip, dtype=dtypes, header=0, usecols=train_cols)
     df = pd.read_csv(path_train, dtype=dtypes)
-    df_1 = df.drop(df[['is_attributed']] <1)
+    df_1 = df.drop(df['is_attributed'] <1)
     print (df_1.describe())
     path_train_1 ='./input/train_1.csv'
     df_1.to_csv(path_train_1, index=False)
     del df_1
     gc.collect()
 
-    df_0 = df.drop(df[['is_attributed']] >0)
+    df_0 = df.drop(df['is_attributed'] >0)
     print (df_0.describe())
     path_train_0 ='./input/train_all0.csv'
     df_0.to_csv(path_train_0, index=False)
