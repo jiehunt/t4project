@@ -689,6 +689,7 @@ def XGB_CV(
               'gpu_id': 0,
               'max_bin':16,
               'tree_method':'gpu_hist',
+              'grow_policy': "lossguide",
               # 'tree_method':'hist',
               }
 
