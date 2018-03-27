@@ -32,21 +32,23 @@ def h_get_train():
             }
     # train = pd.read_csv(path_train, skiprows=skip, dtype=dtypes, header=0, usecols=train_cols)
     df = pd.read_csv(path_train, dtype=dtypes)
-    df_1 = df.drop(df[df.is_attributed <1 ].index, inplace=True)
-    print (df_1.describe())
+    df.drop(df[df['is_attributed'] <1 ].index, inplace=True)
+    print (df.describe())
     path_train_1 ='./input/train_1.csv'
-    df_1.to_csv(path_train_1, index=False)
-    del df_1
-    gc.collect()
-
-    df_0 = df.drop(df[df.is_attributed > 0 ].index, inplace=True)
-    print (df_0.describe())
-    path_train_0 ='./input/train_all0.csv'
-    df_0.to_csv(path_train_0, index=False)
+    df.to_csv(path_train_1, index=False)
     del df
     gc.collect()
 
-    number = len(df_0)
+    df = pd.read_csv(path_train, dtype=dtypes)
+    df.drop(df[df.is_attributed > 0 ].index, inplace=True)
+    print (df.describe())
+    path_train_0 ='./input/train_all0.csv'
+    df.to_csv(path_train_0, index=False)
+    del df
+    gc.collect()
+
+    df = pd.read_csv(path_train_0, dtype=dtypes)
+    number = len(df)
     row_list = random.sample(range(number-1), DATA_NUMBER)
     df_2 = df_0.iloc[row_list]
     path_train_2 ='./input/train_0.csv'
