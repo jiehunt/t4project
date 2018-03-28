@@ -1014,7 +1014,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'xgb' # xgb lgb
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
