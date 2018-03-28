@@ -31,6 +31,7 @@ from sklearn.feature_selection import SelectFromModel
 from keras.preprocessing import text, sequence
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+from sklearn.preprocessing import LabelEncoder
 
 from keras import initializers, regularizers, constraints, optimizers, layers, callbacks
 from keras import backend as K
@@ -97,6 +98,19 @@ def h_rank(predict_list):
 
     predictions /= len(predict_list)
     return predictions
+
+class RocAucEvaluation(Callback):
+    def __init__(self, validation_data=(), interval=1):
+        super(Callback, self).__init__()
+
+        self.interval = interval
+        self.X_val, self.y_val = validation_data
+
+    def on_epoch_end(self, epoch, logs={}):
+        if epoch % self.interval == 0:
+            y_pred = self.model.predict(self.X_val, verbose=0)
+            score = roc_auc_score(self.y_val, y_pred)
+            print("\n ROC-AUC - epoch: {:d} - score: {:.6f}".format(epoch+1, score))
 
 
 """"""""""""""""""""""""""""""
@@ -201,6 +215,9 @@ def f_get_train_test_data(data_set, feature_type):
             train['app_channel_count'] = train['app_channel_count'].astype('uint16')
             del n_chans
             gc.collect()
+
+    if feature_type == 'alax':
+        train[['app','device','os', 'channel', 'hour', 'day']].apply(LabelEncoder().fit_transform)
 
     test = train[len_train:].copy().drop( target, axis=1 )
     train = train[:len_train]
@@ -427,7 +444,7 @@ def m_xgb_model(train, test, feature_type):
 
     return pred
 
-def m_nn_model(x_train, y_train, test_df,model_type, feature_type, data_type):
+def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_type, data_type,  file_path):
 
     features = x_train.columns
     print (features)
@@ -439,6 +456,11 @@ def m_nn_model(x_train, y_train, test_df,model_type, feature_type, data_type):
     lr_init, lr_fin = 0.001, 0.0001
     dr = 0.2
     lr = 0.001
+
+    check_point = ModelCheckpoint(file_path, monitor = "val_loss", verbose = 1,
+                                  save_best_only = True, mode = "min")
+    ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
+    early_stop = EarlyStopping(monitor = "val_loss", mode = "min", patience = 5)
 
     emb_list = []
     input_list = []
@@ -459,14 +481,16 @@ def m_nn_model(x_train, y_train, test_df,model_type, feature_type, data_type):
     model = Model(inputs=input_list, outputs=outp)
 
 
-    exp_decay = lambda init, fin, steps: (init/fin)**(1/(steps-1)) - 1
-    steps = int(len(train_df) / batch_size) * epochs
+    # exp_decay = lambda init, fin, steps: (init/fin)**(1/(steps-1)) - 1
+    # steps = int(len(train_df) / batch_size) * epochs
     optimizer_adam = Adam(lr=lr, decay=lr_decay)
     model.compile(loss='binary_crossentropy',optimizer=optimizer_adam,metrics=['accuracy'])
 
     print (model.summary())
     class_weight = {0:.01,1:.99} # magic
-    model.fit(train_df, y_train, batch_size=batch_size, epochs=epochs, class_weight=class_weight, shuffle=True, verbose=2)
+    model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, class_weight=class_weight,
+        validation_data = (x_valid, y_valid),
+        shuffle=True, verbose=2, callbacks = [ra_val, check_point, early_stop])
 
     return model
 
@@ -903,6 +927,74 @@ def app_tune_xgb_bayesian(train, feature_type):
     history_df['AUC'] = ( history_df['gini'] + 1 ) / 2
     history_df.to_csv('bayesian_xgb_grid.csv')
 
+    return
+
+def app_train_nn(train, test, model_type, feature_type, data_type):
+
+    if feature_type == 'andy_org':
+        feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    elif feature_type == 'andy_doufu':
+        feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+
+    target = 'is_attributed'
+
+
+    splits = 3
+
+    embed_size = 300
+
+    m_batch_size = 32
+    m_epochs = 4
+    m_verbose = 1
+    lr = 1e-3
+    lr_d = 0
+    units = 128
+    dr = 0.2
+
+    class_pred = np.ndarray(shape=(len(train), 1))
+
+    with timer("Goto Train NN Model"):
+        folds = StratifiedKFold(n_splits=splits, shuffle=True, random_state=1)
+
+        for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[feature_names], train[target])):
+
+            print ("goto %d fold :" % n_fold)
+            X_train_n = train[feature_names].iloc[trn_idx]
+            Y_train_n = train[target].iloc[trn_idx]
+            X_valid_n = train[feature_names].iloc[val_idx]
+            Y_valid_n = train[target].iloc[val_idx]
+
+            if model_type == 'nn': # gru
+                file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type)+ str(n_fold) + '.hdf5'
+                if os.path.exists(file_path):
+                    model = load_model(file_path)
+                else:
+                    model = m_nn_model(X_train_n, Y_train_n, X_valid_n, Y_valid_n,test,model_type, feature_type, data_type,  file_path)
+
+            class_pred[val_idx] =pd.DataFrame(model.predict(X_valid_n))
+
+            if n_fold > 0:
+                pred = model.predict(test) + pred
+            else:
+                pred = model.predict(test)
+
+        oof_names = ['is_attributed_oof']
+
+        class_pred = pd.DataFrame(class_pred)
+        class_pred.columns = oof_names
+        print("roc auc scores : %.6f" % roc_auc_score(train[target], class_pred[oof_names]))
+
+        # Save OOF predictions - may be interesting for stacking...
+        file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
+        class_pred.to_csv(file_name, index=False, float_format="%.6f")
+
+        pred = pred / splits
+        pred =pd.DataFrame(pred)
+        pred.columns = target
+
+        return pred
+
 
 
 """"""""""""""""""""""""""""""
@@ -930,23 +1022,27 @@ if __name__ == '__main__':
     print (test.info())
     # pred =  app_train(train, test, model_type,feature_type):
 
-    # app_tune_xgb(train, feature_type)
-    if feature_type == 'andy_org':
-        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
-    elif feature_type == 'andy_doufu':
-        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
-    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+    pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    ##################################
+    # use bayesian to find param for xgb
+    ##################################
+    # if feature_type == 'andy_org':
+    #     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    # elif feature_type == 'andy_doufu':
+    #     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    # categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
-    target = 'is_attributed'
-    Y = train[target]
-    train = train[predictors]
+    # target = 'is_attributed'
+    # Y = train[target]
+    # train = train[predictors]
 
-    dtrain = xgb.DMatrix(train, label=Y)
+    # dtrain = xgb.DMatrix(train, label=Y)
 
-    app_tune_xgb_bayesian(train, feature_type)
+    # app_tune_xgb_bayesian(train, feature_type)
+    ##################################
 
-    # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    # m_make_single_submission(outfile, pred)
+    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    m_make_single_submission(outfile, pred)
 
 
     print('[{}] All Done!!!'.format(time.time() - start_time))
