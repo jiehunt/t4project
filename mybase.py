@@ -120,7 +120,7 @@ def h_get_keras_data(dataset, feature_type):
 
     X = {}
     for name in feature_names:
-        X[str(name)] = np.array(dataset.name)
+        X[str(name)] = np.array(dataset[[name]])
 
     return X
 
