@@ -427,6 +427,50 @@ def m_xgb_model(train, test, feature_type):
 
     return pred
 
+def m_nn_model(x_train, y_train, test_df,model_type, feature_type, data_type):
+
+    features = x_train.columns
+    print (features)
+
+    emb_n = 50
+    dense_n = 1000
+    batch_size = 20000
+    epochs = 2
+    lr_init, lr_fin = 0.001, 0.0001
+    dr = 0.2
+    lr = 0.001
+
+    emb_list = []
+    input_list = []
+    for n, feature in enumerate(features):
+        max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
+        input_list.appand(Input(shape=[1], name = str(feature)))
+
+        emb_list.appand(Embedding(max_num, emb_n)(input_list[n]))
+
+    fe = concatenate(emb_list)
+    s_dout = SpatialDropout1D(0.2)(fe)
+    x = Dropout(dr)(Dense(dense_n,activation='relu')(fl))
+    x = Dropout(dr)(Dense(dense_n,activation='relu')(x))
+    gl = MaxPooling1D(pool_size=1, strides=1)(s_dout)
+    fl = Flatten()(gl)
+    x = concatenate([(x), (fl)])
+    outp = Dense(1,activation='sigmoid')(x)
+    model = Model(inputs=input_list, outputs=outp)
+
+
+    exp_decay = lambda init, fin, steps: (init/fin)**(1/(steps-1)) - 1
+    steps = int(len(train_df) / batch_size) * epochs
+    optimizer_adam = Adam(lr=lr, decay=lr_decay)
+    model.compile(loss='binary_crossentropy',optimizer=optimizer_adam,metrics=['accuracy'])
+
+    print (model.summary())
+    class_weight = {0:.01,1:.99} # magic
+    model.fit(train_df, y_train, batch_size=batch_size, epochs=epochs, class_weight=class_weight, shuffle=True, verbose=2)
+
+    return model
+
+
 """"""""""""""""""""""""""""""
 # Stacking
 """"""""""""""""""""""""""""""
@@ -676,7 +720,7 @@ def XGB_CV(
               'eta' : float(eta),
               'objective' : 'binary:logistic',
               'nthread' : 4,
-              'silent' : False,
+              'silent' : True,
               'eval_metric': 'auc',
               'subsample' : max(min(subsample, 1), 0),
               'colsample_bytree' : max(min(colsample_bytree, 1), 0),
@@ -702,11 +746,11 @@ def XGB_CV(
     xgbc = xgb.cv(
                     paramt,
                     dtrain,
-                    num_boost_round = 20000,
+                    num_boost_round = 10000,
                     stratified = True,
                     nfold = folds,
 #                    verbose_eval = 10,
-                    early_stopping_rounds = 100,
+                    early_stopping_rounds = 50,
                     metrics = 'auc',
                     show_stdv = True
                )
