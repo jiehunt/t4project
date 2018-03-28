@@ -466,9 +466,8 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     input_list = []
     for n, feature in enumerate(features):
         max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
-        input_list.appand(Input(shape=[1], name = str(feature)))
-
-        emb_list.appand(Embedding(max_num, emb_n)(input_list[n]))
+        input_list.append(Input(shape=[1], name = str(feature)))
+        emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
 
     fe = concatenate(emb_list)
     s_dout = SpatialDropout1D(0.2)(fe)
