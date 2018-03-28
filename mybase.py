@@ -471,6 +471,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     fe = concatenate(emb_list)
     s_dout = SpatialDropout1D(0.2)(fe)
+    fl = Flatten()(gl)
     x = Dropout(dr)(Dense(dense_n,activation='relu')(fl))
     x = Dropout(dr)(Dense(dense_n,activation='relu')(x))
     gl = MaxPooling1D(pool_size=1, strides=1)(s_dout)
@@ -480,8 +481,9 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     model = Model(inputs=input_list, outputs=outp)
 
 
-    # exp_decay = lambda init, fin, steps: (init/fin)**(1/(steps-1)) - 1
-    # steps = int(len(train_df) / batch_size) * epochs
+    exp_decay = lambda init, fin, steps: (init/fin)**(1/(steps-1)) - 1
+    steps = int(len(train_df) / batch_size) * epochs
+    lr_decay = exp_decay(lr_init, lr_fin, steps)
     optimizer_adam = Adam(lr=lr, decay=lr_decay)
     model.compile(loss='binary_crossentropy',optimizer=optimizer_adam,metrics=['accuracy'])
 
