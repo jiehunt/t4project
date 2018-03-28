@@ -30,22 +30,21 @@ def h_get_train():
             'is_attributed' : 'uint8',
             'click_id'      : 'uint32'
             }
-    # train = pd.read_csv(path_train, skiprows=skip, dtype=dtypes, header=0, usecols=train_cols)
-    # df = pd.read_csv(path_train, dtype=dtypes)
-    # df.drop(df[df['is_attributed'] <1 ].index, inplace=True)
-    # print (df.describe())
-    # path_train_1 ='./input/train_1.csv'
-    # df.to_csv(path_train_1, index=False)
-    # del df
-    # gc.collect()
+    df = pd.read_csv(path_train, dtype=dtypes)
+    df.drop(df[df['is_attributed'] <1 ].index, inplace=True)
+    print (df.describe())
+    path_train_1 ='./input/train_1.csv'
+    df.to_csv(path_train_1, index=False)
+    del df
+    gc.collect()
 
-    # df = pd.read_csv(path_train, dtype=dtypes)
-    # df.drop(df[df.is_attributed > 0 ].index, inplace=True)
-    # print (df.describe())
+    df = pd.read_csv(path_train, dtype=dtypes)
+    df.drop(df[df.is_attributed > 0 ].index, inplace=True)
+    print (df.describe())
     path_train_0 ='./input/train_all0.csv'
-    # df.to_csv(path_train_0, index=False)
-    # del df
-    # gc.collect()
+    df.to_csv(path_train_0, index=False)
+    del df
+    gc.collect()
 
     df = pd.read_csv(path_train_0, dtype=dtypes)
     number = len(df)
