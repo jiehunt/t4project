@@ -482,7 +482,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
 
     exp_decay = lambda init, fin, steps: (init/fin)**(1/(steps-1)) - 1
-    steps = int(len(train_df) / batch_size) * epochs
+    steps = int(len(train) / batch_size) * epochs
     lr_decay = exp_decay(lr_init, lr_fin, steps)
     optimizer_adam = Adam(lr=lr, decay=lr_decay)
     model.compile(loss='binary_crossentropy',optimizer=optimizer_adam,metrics=['accuracy'])
