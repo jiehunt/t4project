@@ -471,7 +471,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     fe = concatenate(emb_list)
     s_dout = SpatialDropout1D(0.2)(fe)
-    fl = Flatten()(gl)
+    fl = Flatten()(s_dout)
     x = Dropout(dr)(Dense(dense_n,activation='relu')(fl))
     x = Dropout(dr)(Dense(dense_n,activation='relu')(x))
     gl = MaxPooling1D(pool_size=1, strides=1)(s_dout)
