@@ -1062,10 +1062,10 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
 
             if model_type == 'nn': # nn
                 file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type)+ str(n_fold) + '.hdf5'
-                if os.path.exists(file_path):
-                    model = load_model(file_path)
-                else:
-                    model = m_nn_model(X_train_n, Y_train_n, X_valid_n, Y_valid_n,test,model_type, feature_type, data_type,  file_path)
+                # if os.path.exists(file_path):
+                #     model = load_model(file_path)
+                # else:
+                model = m_nn_model(X_train_n, Y_train_n, X_valid_n, Y_valid_n,test,model_type, feature_type, data_type,  file_path)
 
             print("goto valid")
             # x_valid = h_get_keras_data(X_valid_n, feature_type)
