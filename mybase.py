@@ -23,6 +23,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import KFold
 from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.model_selection import GridSearchCV
 from sklearn.model_selection import cross_val_predict
 from sklearn.metrics import roc_auc_score
@@ -955,9 +956,9 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
         feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
-    target = 'is_attributed'
+    target = ['is_attributed']
 
-    splits = 3
+    splits = 1
 
     embed_size = 300
 
@@ -971,8 +972,11 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
 
     class_pred = np.ndarray(shape=(len(train), 1))
 
+    test = h_get_keras_data(test, feature_type)
+
     with timer("Goto Train NN Model"):
-        folds = StratifiedKFold(n_splits=splits, shuffle=True, random_state=1)
+        # folds = StratifiedKFold(n_splits=splits, shuffle=True, random_state=1)
+        folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.05, random_state = 182)
 
         for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[feature_names], train[target])):
 
@@ -989,16 +993,21 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
                 else:
                     model = m_nn_model(X_train_n, Y_train_n, X_valid_n, Y_valid_n,test,model_type, feature_type, data_type,  file_path)
 
-            class_pred[val_idx] =pd.DataFrame(model.predict(X_valid_n))
+            print("goto valid") 
+            # x_valid = h_get_keras_data(X_valid_n, feature_type) 
+            # class_pred[val_idx] =pd.DataFrame(model.predict(x_valid))
 
+            print("goto test")
             if n_fold > 0:
                 pred = model.predict(test) + pred
             else:
                 pred = model.predict(test)
+  
+        
+        oof_valid = h_get_keras_data(train[feature_names], feature_type) 
+        class_pred =pd.DataFrame(model.predict(oof_valid))
 
         oof_names = ['is_attributed_oof']
-
-        class_pred = pd.DataFrame(class_pred)
         class_pred.columns = oof_names
         print("roc auc scores : %.6f" % roc_auc_score(train[target], class_pred[oof_names]))
 
