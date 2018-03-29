@@ -628,10 +628,8 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     print (model.summary())
     with timer("h_get_keras_data for train"):
-        print (x_train.columns)
         x_train = h_get_keras_data(x_train, feature_type)
     with timer("h_get_keras_data for valid"):
-        print (x_valid.columns)
         x_valid = h_get_keras_data(x_valid, feature_type)
 
     ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
@@ -1116,9 +1114,9 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
             print ("goto %d fold :" % n_fold)
             print ("type(train[target]) is", type(train[target]))
             X_train_n = train[feature_names].iloc[trn_idx]
-            Y_train_n = train[target].iloc[trn_idx]
+            Y_train_n = train[target].iloc[trn_idx].values
             X_valid_n = train[feature_names].iloc[val_idx]
-            Y_valid_n = train[target].iloc[val_idx]
+            Y_valid_n = train[target].iloc[val_idx].values
             print ("type(X_train_n) is", type(X_train_n))
             print ("type(Y_train_n) is", type(Y_train_n))
 
@@ -1173,7 +1171,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'xgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
