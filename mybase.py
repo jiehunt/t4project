@@ -114,10 +114,10 @@ class RocAucEvaluation(Callback):
             print("\n ROC-AUC - epoch: {:d} - score: {:.6f}".format(epoch+1, score))
 
 def h_get_keras_data(dataset, feature_type):
-    if feature_type == 'andy_org':
-        feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
-    elif feature_type == 'andy_doufu':
-        feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    # if feature_type == 'andy_org':
+    #     feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    # elif feature_type == 'andy_doufu':
+    #     feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
 
     print (type(dataset))
     columns = dataset.columns
@@ -565,6 +565,9 @@ def m_xgb_model(train, test, feature_type):
             else :
                 pred = pred + model.predict(dtest, ntree_limit=model.best_ntree_limit)
 
+            del X_train_n,Y_train_n,X_valid_n, Y_valid_n
+            gc.collect()
+
         class_pred = pd.DataFrame(class_pred)
         oof_names = ['is_attributed_oof']
         class_pred.columns = oof_names
@@ -625,8 +628,10 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     print (model.summary())
     with timer("h_get_keras_data for train"):
+        print (x_train.columns)
         x_train = h_get_keras_data(x_train, feature_type)
     with timer("h_get_keras_data for valid"):
+        print (x_valid.columns)
         x_valid = h_get_keras_data(x_valid, feature_type)
 
     ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
