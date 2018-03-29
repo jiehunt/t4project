@@ -624,14 +624,16 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     model.compile(loss='binary_crossentropy',optimizer=optimizer_adam,metrics=['accuracy'])
 
     print (model.summary())
-    x_train = h_get_keras_data(x_train, feature_type)
-    x_valid = h_get_keras_data(x_valid, feature_type)
+    with timer("h_get_keras_data for train"):
+        x_train = h_get_keras_data(x_train, feature_type)
+    with timer("h_get_keras_data for valid"):
+        x_valid = h_get_keras_data(x_valid, feature_type)
 
     ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
     class_weight = {0:.01,1:.99} # magic
     model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, class_weight='auto',
-        validation_data = (x_valid, y_valid),
         shuffle=True, verbose=1)
+        # validation_data = (x_valid, y_valid),
         #, callbacks = [ra_val, check_point, early_stop])
 
     return model
@@ -1106,10 +1108,13 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
         for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[feature_names], train[target])):
 
             print ("goto %d fold :" % n_fold)
+            print ("type(train[target]) is", type(train[target]))
             X_train_n = train[feature_names].iloc[trn_idx]
             Y_train_n = train[target].iloc[trn_idx]
             X_valid_n = train[feature_names].iloc[val_idx]
             Y_valid_n = train[target].iloc[val_idx]
+            print ("type(X_train_n) is", type(X_train_n))
+            print ("type(Y_train_n) is", type(Y_train_n))
 
             if model_type == 'nn': # nn
                 file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type)+ str(n_fold) + '.hdf5'
@@ -1162,7 +1167,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'lgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
