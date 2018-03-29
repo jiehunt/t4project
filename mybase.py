@@ -504,11 +504,11 @@ def m_xgb_model(train, test, feature_type):
             model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=100)
 
             if n_fold > 0:
-                pred = model.predict(dtest) + pred
+                pred = model.predict(dtest, ntree_limit=model.best_ntree_limit) + pred
             else:
-                pred = model.predict(dtest)
+                pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
 
-            class_pred[val_idx] = model.predict(X_valid_n, num_iteration=model.best_iteration)
+            class_pred[val_idx] = model.predict(X_valid_n, , ntree_limit=model.best_ntree_limit)
             score = roc_auc_score(Y.iloc[val_idx], class_pred[val_idx])
             print("\t Fold %d : %.6f in %3d rounds" % (n_fold + 1, score, model.best_iteration))
 
@@ -1134,28 +1134,28 @@ if __name__ == '__main__':
     ##################################
     # traing for nn
     ##################################
-    # if model_type == 'xgb':
-    #     pred =  app_train(train, test, model_type,feature_type)
-    # elif model_type == 'nn':
-    #     pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    if model_type == 'xgb' or model_type == 'lgb':
+        pred =  app_train(train, test, model_type,feature_type)
+    elif model_type == 'nn':
+        pred = app_train_nn(train, test, model_type, feature_type, data_set)
     ##################################
 
     ##################################
     # use bayesian to find param for xgb
     ##################################
-    if feature_type == 'andy_org':
-        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
-    elif feature_type == 'andy_doufu':
-        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
-    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+    # if feature_type == 'andy_org':
+    #     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    # elif feature_type == 'andy_doufu':
+    #     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    # categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
-    target = 'is_attributed'
-    Y = train[target]
-    train = train[predictors]
+    # target = 'is_attributed'
+    # Y = train[target]
+    # train = train[predictors]
 
-    dtrain = xgb.DMatrix(train, label=Y)
+    # dtrain = xgb.DMatrix(train, label=Y)
 
-    app_tune_xgb_bayesian(train, feature_type)
+    # app_tune_xgb_bayesian(train, feature_type)
     ##################################
 
     # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
