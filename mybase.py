@@ -1115,18 +1115,22 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'xgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
-
+ 
+    print (data_set, model_type, feature_type)
     print (train.info())
     print (test.info())
-    # pred =  app_train(train, test, model_type,feature_type)
+    if model_type == 'xgb': 
+        pred =  app_train(train, test, model_type,feature_type)
+    elif model_type == 'nn':
+        pred = app_train_nn(train, test, model_type, feature_type, data_set)
 
     ##################################
     # traing for nn
     ##################################
-    pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    # pred = app_train_nn(train, test, model_type, feature_type, data_set)
     ##################################
 
     ##################################
