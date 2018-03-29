@@ -508,7 +508,7 @@ def m_xgb_model(train, test, feature_type):
             else:
                 pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
 
-            class_pred[val_idx] = model.predict(X_valid_n, , ntree_limit=model.best_ntree_limit)
+            class_pred[val_idx] = model.predict(X_valid_n, ntree_limit=model.best_ntree_limit)
             score = roc_auc_score(Y.iloc[val_idx], class_pred[val_idx])
             print("\t Fold %d : %.6f in %3d rounds" % (n_fold + 1, score, model.best_iteration))
 
