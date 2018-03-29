@@ -118,7 +118,7 @@ def h_get_keras_data(dataset, feature_type):
         feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     elif feature_type == 'andy_doufu':
         feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
-    
+
     print (type(dataset))
     columns = dataset.columns
 
@@ -421,10 +421,12 @@ def m_xgb_model(train, test, feature_type):
         predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
-    target = 'is_attributed'
+    target = ['is_attributed']
     Y = train[target]
     train = train[predictors]
     test = test[predictors]
+
+    splits = 3
     # params = {'eta': 0.3,
     #       'tree_method': "gpu_hist",
     #       'grow_policy': "lossguide",
@@ -448,7 +450,7 @@ def m_xgb_model(train, test, feature_type):
           'grow_policy': "lossguide",
           'objective': 'binary:logistic',
 
-	  'max_depth' : 4,
+          'max_depth' : 4,
           'gamma' : 9.9407,
           'eta' : 0.6223,
           'subsample' : 0.6875,
@@ -466,18 +468,68 @@ def m_xgb_model(train, test, feature_type):
             'max_bin': 16,
             'tree_method':'gpu_hist',
           'silent': True}
-    X_train, X_valid, Y_train, Y_valid = train_test_split(train, Y, test_size=0.05, random_state=99)
-    dtrain = xgb.DMatrix(X_train, Y_train)
-    dvalid = xgb.DMatrix(X_valid, Y_valid)
-    del X_train, Y_train, X_valid, Y_valid
-    gc.collect()
+    one_fold = False
+    if one_fold == True:
+        splits = 1
+        X_train, X_valid, Y_train, Y_valid = train_test_split(train, Y, test_size=0.05, random_state=99)
+        dtrain = xgb.DMatrix(X_train, Y_train)
+        dvalid = xgb.DMatrix(X_valid, Y_valid)
+        del X_train, Y_train, X_valid, Y_valid
+        gc.collect()
 
-    dtest = xgb.DMatrix(test)
+        dtest = xgb.DMatrix(test)
 
-    watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
-    model = xgb.train(params, dtrain, 500, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=5)
+        watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
+        model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=5)
 
-    pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
+        pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
+
+    else:
+        pred = np.zeros( shape=(len(test), 1) )
+
+        folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.05, random_state = 182)
+
+        dtest = xgb.DMatrix(test)
+        class_pred = np.zeros(len(train))
+        for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[predictors], train[target])):
+            print ("goto %d fold :" % n_fold)
+            X_train_n = train[predictors].iloc[trn_idx]
+            Y_train_n = train[target].iloc[trn_idx]
+            X_valid_n = train[predictors].iloc[val_idx]
+            Y_valid_n = train[target].iloc[val_idx]
+            dtrain = xgb.DMatrix(X_train_n, Y_train_n)
+            dvalid = xgb.DMatrix(X_valid, Y_valid)
+
+            watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
+            model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=5)
+
+            if n_fold > 0:
+                pred = model.predict(test) + pred
+            else:
+                pred = model.predict(test)
+
+            class_pred[val_idx] = model.predict(X_valid_n, num_iteration=model.best_iteration)
+            score = roc_auc_score(train[target][val_idx], class_pred[val_idx])
+            print("\t Fold %d : %.6f in %3d rounds" % (n_fold + 1, score, model.best_iteration))
+
+            if n_fold > 0:
+                pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
+            else :
+                pred = pred + model.predict(dtest, ntree_limit=model.best_ntree_limit)
+
+        class_pred = pd.DataFrame(class_pred)
+        oof_names = ['is_attributed_oof']
+        class_pred.columns = oof_names
+        print("Full roc auc scores : %.6f" % roc_auc_score(train[target], class_pred[oof_names]))
+
+        # Save OOF predictions - may be interesting for stacking...
+        file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
+        class_pred.to_csv(file_name, index=False, float_format="%.6f")
+
+
+    pred = pred / splits
+    pred =pd.DataFrame(pred)
+    pred.columns = target
 
     return pred
 
@@ -1015,8 +1067,8 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
                 else:
                     model = m_nn_model(X_train_n, Y_train_n, X_valid_n, Y_valid_n,test,model_type, feature_type, data_type,  file_path)
 
-            print("goto valid") 
-            # x_valid = h_get_keras_data(X_valid_n, feature_type) 
+            print("goto valid")
+            # x_valid = h_get_keras_data(X_valid_n, feature_type)
             # class_pred[val_idx] =pd.DataFrame(model.predict(x_valid))
 
             print("goto test")
@@ -1024,9 +1076,9 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
                 pred = model.predict(test) + pred
             else:
                 pred = model.predict(test)
-  
-        
-        oof_valid = h_get_keras_data(train[feature_names], feature_type) 
+
+
+        oof_valid = h_get_keras_data(train[feature_names], feature_type)
         class_pred =pd.DataFrame(model.predict(oof_valid))
 
         oof_names = ['is_attributed_oof']
