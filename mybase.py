@@ -581,7 +581,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
     class_weight = {0:.01,1:.99} # magic
-    model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, class_weight=class_weight,
+    model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, class_weight='auto',
         validation_data = (x_valid, y_valid),
         shuffle=True, verbose=1, callbacks = [ra_val, check_point, early_stop])
 
@@ -1046,8 +1046,6 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
 
     class_pred = np.ndarray(shape=(len(train), 1))
 
-    test = h_get_keras_data(test, feature_type)
-
     with timer("Goto Train NN Model"):
         # folds = StratifiedKFold(n_splits=splits, shuffle=True, random_state=1)
         folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.05, random_state = 182)
@@ -1067,19 +1065,15 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
                 # else:
                 model = m_nn_model(X_train_n, Y_train_n, X_valid_n, Y_valid_n,test,model_type, feature_type, data_type,  file_path)
 
-            print("goto valid")
-            # x_valid = h_get_keras_data(X_valid_n, feature_type)
-            # class_pred[val_idx] =pd.DataFrame(model.predict(x_valid))
+        print("goto test")
+        with timer("Goto prepare test Data"):
+            test = h_get_keras_data(test, feature_type)
+        with timer("Goto predict test Data"):
+            pred = model.predict(test)
 
-            print("goto test")
-            if n_fold > 0:
-                pred = model.predict(test) + pred
-            else:
-                pred = model.predict(test)
-
-
-        oof_valid = h_get_keras_data(train[feature_names], feature_type)
-        class_pred =pd.DataFrame(model.predict(oof_valid))
+        with timer("Goto prepare oof Data"):
+            oof_valid = h_get_keras_data(train[feature_names], feature_type)
+            class_pred =pd.DataFrame(model.predict(oof_valid))
 
         oof_names = ['is_attributed_oof']
         class_pred.columns = oof_names
@@ -1118,11 +1112,11 @@ if __name__ == '__main__':
     model_type = 'xgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
- 
+
     print (data_set, model_type, feature_type)
     print (train.info())
     print (test.info())
-    if model_type == 'xgb': 
+    if model_type == 'xgb':
         pred =  app_train(train, test, model_type,feature_type)
     elif model_type == 'nn':
         pred = app_train_nn(train, test, model_type, feature_type, data_set)
