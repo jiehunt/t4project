@@ -501,12 +501,12 @@ def m_xgb_model(train, test, feature_type):
             dvalid = xgb.DMatrix(X_valid_n, Y_valid_n)
 
             watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
-            model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=5)
+            model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=100)
 
             if n_fold > 0:
-                pred = model.predict(test) + pred
+                pred = model.predict(dtest) + pred
             else:
-                pred = model.predict(test)
+                pred = model.predict(dtest)
 
             class_pred[val_idx] = model.predict(X_valid_n, num_iteration=model.best_iteration)
             score = roc_auc_score(Y.iloc[val_idx], class_pred[val_idx])
