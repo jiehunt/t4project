@@ -802,14 +802,15 @@ def h_tuning_lgb(train, train_target,tune_dict, param_test):
 
 def XGB_CV(
           max_depth,
-          gamma,
-          min_child_weight,
-          max_delta_step,
-          subsample,
-          colsample_bytree,
-          reg_alpha,
-          reg_lambda,
-          eta,
+          max_leaves,
+          # gamma,
+          # min_child_weight,
+          # max_delta_step,
+          # subsample,
+          # colsample_bytree,
+          # reg_alpha,
+          # reg_lambda,
+          # eta,
          ):
       # 'learning_rate' : 0.1,
       #  'n_estimators'  : 1000,
@@ -829,24 +830,36 @@ def XGB_CV(
 #
 # Define all XGboost parameters
 #
-
+    # from joyo
+    #       'subsample': 0.9,
+    #       'colsample_bytree': 0.7,
+    #       'colsample_bylevel':0.7,
+    #       'min_child_weight':0,
+    #       'alpha':4,
     paramt = {
               'booster' : 'gbtree',
               'max_depth' : int(max_depth),
-              'gamma' : gamma,
-              'eta' : float(eta),
+              # 'gamma' : gamma,
+              # 'eta' : float(eta),
+              'eta' : .3,
               'objective' : 'binary:logistic',
+              'alpha':4,
               'nthread' : 4,
               'silent' : True,
               'eval_metric': 'auc',
-              'subsample' : max(min(subsample, 1), 0),
-              'colsample_bytree' : max(min(colsample_bytree, 1), 0),
-              'min_child_weight' : min_child_weight,
-              'max_delta_step' : int(max_delta_step),
+              'max_leaves':int(max_leaves),
+              # 'subsample' : max(min(subsample, 1), 0),
+              'subsample' :.9,
+              'colsample_bylevel':0.7,
+              # 'colsample_bytree' : max(min(colsample_bytree, 1), 0),
+              'colsample_bytree' : .7,
+              'min_child_weight' : 0,
+              # 'min_child_weight' : min_child_weight,
+              # 'max_delta_step' : int(max_delta_step),
               'seed' : 1001,
               'scale_pos_weight':9, # 40000000 : 480000
-              'reg_alpha':float(reg_alpha), # default 0
-              'reg_lambda':float(reg_lambda), # default 1
+              # 'reg_alpha':float(reg_alpha), # default 0
+              # 'reg_lambda':float(reg_lambda), # default 1
               'gpu_id': 0,
               'max_bin':16,
               'tree_method':'gpu_hist',
@@ -863,11 +876,11 @@ def XGB_CV(
     xgbc = xgb.cv(
                     paramt,
                     dtrain,
-                    num_boost_round = 10000,
+                    num_boost_round = 20000,
                     stratified = True,
                     nfold = folds,
 #                    verbose_eval = 10,
-                    early_stopping_rounds = 50,
+                    early_stopping_rounds = 100,
                     metrics = 'auc',
                     show_stdv = True
                )
@@ -988,15 +1001,17 @@ def app_train(train, test, model_type,feature_type):
 def app_tune_xgb_bayesian(train, feature_type):
 
     XGB_BO = BayesianOptimization(XGB_CV, {
-                                     'max_depth': (2, 12),
-                                     'gamma': (0.001, 10.0),
-                                     'min_child_weight': (0, 20),
-                                     'max_delta_step': (0, 10),
-                                     'subsample': (0.4, 1.0),
-                                     'colsample_bytree' :(0.4, 1.0),
-                                     'reg_alpha' :(0, 1.0),
-                                     'reg_lambda' :(0.1, 1.5),
-                                     'eta' :(0.1, 1.0)
+                                     # 'max_depth': (2, 12),
+                                     'max_depth': (0,5),
+                                     'max_leaves': (0,2000)
+                                     # 'gamma': (0.001, 10.0),
+                                     # 'min_child_weight': (0, 20),
+                                     # 'max_delta_step': (0, 10),
+                                     # 'subsample': (0.4, 1.0),
+                                     # 'colsample_bytree' :(0.4, 1.0),
+                                     # 'reg_alpha' :(0, 1.0),
+                                     # 'reg_lambda' :(0.1, 1.5),
+                                     # 'eta' :(0.1, 1.0)
                                     })
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore')
@@ -1116,37 +1131,35 @@ if __name__ == '__main__':
     print (data_set, model_type, feature_type)
     print (train.info())
     print (test.info())
-    if model_type == 'xgb':
-        pred =  app_train(train, test, model_type,feature_type)
-    elif model_type == 'nn':
-        pred = app_train_nn(train, test, model_type, feature_type, data_set)
-
     ##################################
     # traing for nn
     ##################################
-    # pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    # if model_type == 'xgb':
+    #     pred =  app_train(train, test, model_type,feature_type)
+    # elif model_type == 'nn':
+    #     pred = app_train_nn(train, test, model_type, feature_type, data_set)
     ##################################
 
     ##################################
     # use bayesian to find param for xgb
     ##################################
-    # if feature_type == 'andy_org':
-    #     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
-    # elif feature_type == 'andy_doufu':
-    #     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
-    # categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+    if feature_type == 'andy_org':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    elif feature_type == 'andy_doufu':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
-    # target = 'is_attributed'
-    # Y = train[target]
-    # train = train[predictors]
+    target = 'is_attributed'
+    Y = train[target]
+    train = train[predictors]
 
-    # dtrain = xgb.DMatrix(train, label=Y)
+    dtrain = xgb.DMatrix(train, label=Y)
 
-    # app_tune_xgb_bayesian(train, feature_type)
+    app_tune_xgb_bayesian(train, feature_type)
     ##################################
 
-    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    m_make_single_submission(outfile, pred)
+    # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    # m_make_single_submission(outfile, pred)
 
 
     print('[{}] All Done!!!'.format(time.time() - start_time))
