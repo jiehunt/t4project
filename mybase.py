@@ -491,12 +491,12 @@ def m_xgb_model(train, test, feature_type):
 
         dtest = xgb.DMatrix(test)
         class_pred = np.zeros(len(train))
-        for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[predictors], train['is_attributed'])):
+        for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train, Y)):
             print ("goto %d fold :" % n_fold)
             X_train_n = train[predictors].iloc[trn_idx]
-            Y_train_n = train[target].iloc[trn_idx]
+            Y_train_n = Y.iloc[trn_idx]
             X_valid_n = train[predictors].iloc[val_idx]
-            Y_valid_n = train[target].iloc[val_idx]
+            Y_valid_n = Y.iloc[val_idx]
             dtrain = xgb.DMatrix(X_train_n, Y_train_n)
             dvalid = xgb.DMatrix(X_valid, Y_valid)
 
@@ -509,7 +509,7 @@ def m_xgb_model(train, test, feature_type):
                 pred = model.predict(test)
 
             class_pred[val_idx] = model.predict(X_valid_n, num_iteration=model.best_iteration)
-            score = roc_auc_score(train['is_attributed'][val_idx], class_pred[val_idx])
+            score = roc_auc_score(Y.iloc[val_idx], class_pred[val_idx])
             print("\t Fold %d : %.6f in %3d rounds" % (n_fold + 1, score, model.best_iteration))
 
             if n_fold > 0:
@@ -520,7 +520,7 @@ def m_xgb_model(train, test, feature_type):
         class_pred = pd.DataFrame(class_pred)
         oof_names = ['is_attributed_oof']
         class_pred.columns = oof_names
-        print("Full roc auc scores : %.6f" % roc_auc_score(train['is_attributed'], class_pred['is_attributed_oof']))
+        print("Full roc auc scores : %.6f" % roc_auc_score(Y, class_pred[oof_names]))
 
         # Save OOF predictions - may be interesting for stacking...
         file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
