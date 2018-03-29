@@ -425,26 +425,48 @@ def m_xgb_model(train, test, feature_type):
     Y = train[target]
     train = train[predictors]
     test = test[predictors]
+    # params = {'eta': 0.3,
+    #       'tree_method': "gpu_hist",
+    #       'grow_policy': "lossguide",
+    #       'max_leaves': 1400,
+    #       'max_depth': 0,
+    #       'subsample': 0.9,
+    #       'colsample_bytree': 0.7,
+    #       'colsample_bylevel':0.7,
+    #       'min_child_weight':0,
+    #       'alpha':4,
+    #       'objective': 'binary:logistic',
+    #       'scale_pos_weight':9,
+    #       'eval_metric': 'auc',
+    #       'nthread':8,
+    #       'random_state': 99,
+    #         'gpu_id': 0,
+    #         'max_bin': 16,
+    #         'tree_method':'gpu_hist',
+    #       'silent': True}
     params = {'eta': 0.3,
-          'tree_method': "gpu_hist",
           'grow_policy': "lossguide",
-          'max_leaves': 1400,
-          'max_depth': 0,
-          'subsample': 0.9,
-          'colsample_bytree': 0.7,
-          'colsample_bylevel':0.7,
-          'min_child_weight':0,
-          'alpha':4,
           'objective': 'binary:logistic',
-          'scale_pos_weight':9,
+
+	  'max_depth' : 4,
+          'gamma' : 9.9407,
+          'eta' : 0.6223,
+          'subsample' : 0.6875,
+          'colsample_bytree' : 0.6915,
+          'min_child_weight' : 2.7958,
+          'max_delta_step' : 3,
+          'seed' : 1001,
+          'scale_pos_weight':9, # 40000000 : 480000
+          'reg_alpha':0.0823, # default 0
+          'reg_lambda':1.3776, # default 1
+
           'eval_metric': 'auc',
-          'nthread':8,
           'random_state': 99,
             'gpu_id': 0,
             'max_bin': 16,
             'tree_method':'gpu_hist',
           'silent': True}
-    X_train, X_valid, Y_train, Y_valid = train_test_split(train, Y, test_size=0.1, random_state=99)
+    X_train, X_valid, Y_train, Y_valid = train_test_split(train, Y, test_size=0.05, random_state=99)
     dtrain = xgb.DMatrix(X_train, Y_train)
     dvalid = xgb.DMatrix(X_valid, Y_valid)
     del X_train, Y_train, X_valid, Y_valid
@@ -453,7 +475,7 @@ def m_xgb_model(train, test, feature_type):
     dtest = xgb.DMatrix(test)
 
     watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
-    model = xgb.train(params, dtrain, 200, watchlist, maximize=True, early_stopping_rounds = 25, verbose_eval=5)
+    model = xgb.train(params, dtrain, 500, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=5)
 
     pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
 
@@ -1047,9 +1069,14 @@ if __name__ == '__main__':
 
     print (train.info())
     print (test.info())
-    # pred =  app_train(train, test, model_type,feature_type):
+    pred =  app_train(train, test, model_type,feature_type):
 
-    pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    ##################################
+    # traing for nn
+    ##################################
+    # pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    ##################################
+
     ##################################
     # use bayesian to find param for xgb
     ##################################
