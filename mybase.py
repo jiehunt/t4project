@@ -117,9 +117,12 @@ def h_get_keras_data(dataset, feature_type):
         feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     elif feature_type == 'andy_doufu':
         feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    
+    print (type(dataset))
+    columns = dataset.columns
 
     X = {}
-    for name in feature_names:
+    for name in columns:
         X[str(name)] = np.array(dataset[[str(name)]])
 
     return X
@@ -499,9 +502,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     print (model.summary())
     x_train = h_get_keras_data(x_train, feature_type)
-    y_train = h_get_keras_data(y_train, feature_type)
     x_valid = h_get_keras_data(x_valid, feature_type)
-    y_valid = h_get_keras_data(y_valid, feature_type)
 
     ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
     class_weight = {0:.01,1:.99} # magic
