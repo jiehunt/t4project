@@ -549,14 +549,14 @@ def m_xgb_model(train, test, feature_type):
             dvalid = xgb.DMatrix(X_valid_n, Y_valid_n)
 
             watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
-            model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=100)
+            model = xgb.train(params, dtrain, 100, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=100)
 
             if n_fold > 0:
                 pred = model.predict(dtest, ntree_limit=model.best_ntree_limit) + pred
             else:
                 pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
 
-            class_pred[val_idx] = model.predict(X_valid_n, ntree_limit=model.best_ntree_limit)
+            class_pred[val_idx] = model.predict(xgb.DMatrix(X_valid_n), ntree_limit=model.best_ntree_limit)
             score = roc_auc_score(Y.iloc[val_idx], class_pred[val_idx])
             print("\t Fold %d : %.6f in %3d rounds" % (n_fold + 1, score, model.best_iteration))
 
@@ -1167,7 +1167,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'xgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
