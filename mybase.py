@@ -1069,7 +1069,7 @@ if __name__ == '__main__':
 
     print (train.info())
     print (test.info())
-    pred =  app_train(train, test, model_type,feature_type):
+    pred =  app_train(train, test, model_type,feature_type)
 
     ##################################
     # traing for nn
