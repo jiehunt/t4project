@@ -635,9 +635,8 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
     class_weight = {0:.01,1:.99} # magic
     model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, class_weight='auto',
-        shuffle=True, verbose=1)
-        # validation_data = (x_valid, y_valid),
-        #, callbacks = [ra_val, check_point, early_stop])
+        shuffle=True, verbose=1, validation_data = (x_valid, y_valid),
+        callbacks = [ra_val, check_point, early_stop])
 
     return model
 
@@ -1156,10 +1155,27 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
 """"""""""""""""""""""""""""""
 # Ganerate Result
 """"""""""""""""""""""""""""""
-def m_make_single_submission(outfile, m_pred):
+def g_make_single_submission(outfile, m_pred):
     submit = pd.read_csv('./input/test.csv', dtype='int', usecols=['click_id'])
     submit['is_attributed'] = pred
     submit.to_csv(outfile,float_format='%.3f', index=False)
+
+def g_make_pseudo_submission(outfile, m_pred):
+
+    dtypes = {
+            'ip'            : 'uint32',
+            'app'           : 'uint16',
+            'device'        : 'uint16',
+            'os'            : 'uint16',
+            'channel'       : 'uint16',
+            'is_attributed' : 'uint8',
+            'click_id'      : 'uint32'
+            }
+
+    submit = pd.read_csv('./input/test.csv', dtype=dtypes, header=0)
+    submit['is_attributed'] = pred
+    submit.to_csv(outfile,float_format='%.3f', index=False)
+
 
 """"""""""""""""""""""""""""""
 # Main Func
@@ -1171,7 +1187,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'xgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
@@ -1205,9 +1221,11 @@ if __name__ == '__main__':
     # app_tune_xgb_bayesian(train, feature_type)
     ##################################
 
-    # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    # m_make_single_submission(outfile, pred)
+    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    g_make_single_submission(outfile, pred)
 
+    # outfile = 'pseudo/' + str(data_set) + str(model_type) + str(feature_type) + '_pseudo_test.csv'
+    # g_make_pseudo_submission(outfile, pred)
 
     print('[{}] All Done!!!'.format(time.time() - start_time))
 
