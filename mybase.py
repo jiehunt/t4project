@@ -237,7 +237,9 @@ def f_get_train_test_data(data_set, feature_type):
     test = train[len_train:].copy().drop( target, axis=1 )
     train = train[:len_train]
     print('The size of the test set is ', len(test))
+    print('The type of the test set is ', type(test))
     print('The size of the train set is ', len(train))
+    print('The tyep of the train set is ', type(train))
 
     return train, test
 
@@ -332,15 +334,15 @@ def m_old_lgb_model(csr_trn, csr_sub, train, test, feature_type):
         pred = pred/splits
         return pred
 
-def m_lgb_model(train, test):
+def m_lgb_model(train, test, model_type, feature_type, data_type):
 
     if feature_type == 'andy_org':
-        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+        predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     elif feature_type == 'andy_doufu':
-        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
-    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+        predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    categorical = ['app', 'device', 'os', 'channel', 'hour']
 
-    target = 'is_attributed'
+    target = ['is_attributed']
 
     params = {
         'boosting_type': 'gbdt',
@@ -361,56 +363,102 @@ def m_lgb_model(train, test):
         'reg_lambda': 0,
         'nthread': 4,
         'verbose': 0,
-        'scale_pos_weight':99,
+        'scale_pos_weight':9,
         "device": "gpu",
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
         }
+    one_fold = False
+    splits = 3
+    if one_fold == True:
+        splits = 1
+        len_train = len(train)
+        r = 0.1 # the fraction of the train data to be used for validation
+        val = train[(len_train-round(r*len_train)):len_train]
+        print('The size of the validation set is ', len(val))
 
-    len_train = len(train)
-    r = 0.1 # the fraction of the train data to be used for validation
-    val = train[(len_train-round(r*len_train)):len_train]
-    print('The size of the validation set is ', len(val))
+        train = train[:(len_train-round(r*len_train))]
+        print('The size of the train set is ', len(train))
 
-    train = train[:(len_train-round(r*len_train))]
-    print('The size of the train set is ', len(train))
+        dtrain = lgb.Dataset(train[predictors].values, label=train[target].values,
+                              feature_name=predictors,
+                              categorical_feature=categorical
+                              )
+        del train
+        gc.collect()
 
-    dtrain = lgb.Dataset(train[predictors].values, label=train[target].values,
-                          feature_name=predictors,
-                          categorical_feature=categorical
-                          )
-    del train
-    gc.collect()
-
-    dvalid = lgb.Dataset(val[predictors].values, label=val[target].values,
-                          feature_name=predictors,
-                          categorical_feature=categorical
-                          )
-    del val
-    gc.collect()
+        dvalid = lgb.Dataset(val[predictors].values, label=val[target].values,
+                              feature_name=predictors,
+                              categorical_feature=categorical
+                              )
+        del val
+        gc.collect()
 
 
-    dvalid = lgb.Dataset(val[predictors].values, label=val[target].values,
-                          feature_name=predictors,
-                          categorical_feature=categorical
-                          )
-    del val
-    gc.collect()
+        evals_results = {}
 
-    evals_results = {}
+        model = lgb.train(params,
+                         dtrain,
+                         valid_sets=[dtrain, dvalid],
+                         valid_names=['train','valid'],
+                         evals_result=evals_results,
+                         num_boost_round=1000,
+                         early_stopping_rounds=50,
+                         verbose_eval=True,
+                         feval=None)
 
-    lgb_model = lgb.train(params,
-                     dtrain,
-                     valid_sets=[dtrain, dvalid],
-                     valid_names=['train','valid'],
-                     evals_result=evals_results,
-                     num_boost_round=1000,
-                     early_stopping_rounds=50,
-                     verbose_eval=True,
-                     feval=None)
+        pred = model.predict(test[predictors], num_iteration=model.best_iteration)
+    else:
+        pred = np.zeros( shape=(len(test), 1) )
 
-    pred = lgb_model.predict(test[predictors], num_iteration=lgb_model.best_iteration)
+        folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.05, random_state = 182)
 
+        class_pred = np.zeros(len(train))
+
+        for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[predictors], train[target])):
+            print ("goto %d fold :" % n_fold)
+            X_train_n = train[predictors].iloc[trn_idx]
+            Y_train_n = train[target].iloc[trn_idx]
+            X_valid_n = train[predictors].iloc[val_idx]
+            Y_valid_n = train[target].iloc[val_idx]
+            dtrain = lgb.Dataset(X_train_n, label=Y_train_n,
+                              feature_name=predictors,
+                              categorical_feature=categorical
+                              )
+
+            dvalid = lgb.Dataset(X_valid_n, label=Y_valid_n,
+                              feature_name=predictors,
+                              categorical_feature=categorical
+                              )
+
+            evals_results = {}
+            model = lgb.train(params, dtrain, valid_sets=[dtrain, dvalid], valid_names=['train','valid'],
+                         evals_result=evals_results, num_boost_round=1000, early_stopping_rounds=50,
+                         verbose_eval=True, feval=None)
+
+            class_pred[val_idx] = model.predict(X_valid_n, num_iteration=model.best_iteration)
+            score = roc_auc_score(Y_valid_n, class_pred[val_idx])
+            print("\t Fold %d : %.6f in %3d rounds" % (n_fold + 1, score, model.best_iteration))
+
+            if n_fold > 0:
+                pred = model.predict(test[predictors], num_iteration=model.best_iteration) + pred
+            else:
+                pred = model.predict(test[predictors], num_iteration=model.best_iteration)
+
+
+        class_pred = pd.DataFrame(class_pred)
+        oof_names = ['is_attributed_oof']
+        class_pred.columns = oof_names
+        print("Full roc auc scores : %.6f" % roc_auc_score(train[target], class_pred[oof_names]))
+
+        # Save OOF predictions - may be interesting for stacking...
+        file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
+        class_pred.to_csv(file_name, index=False, float_format="%.6f")
+
+
+    pred = pred / splits
+    pred =pd.DataFrame(pred)
+    pred.columns = target
     return pred
 
 def m_xgb_model(train, test, feature_type):
@@ -653,17 +701,6 @@ def app_tune_stack():
         "device": "gpu",
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
-        # num_leaves         default=31, type=int, alias=num_leaf
-        # max_depth          default=-1, type=int
-        # feature_fraction   default=1.0, type=double, 0.0 < feature_fraction < 1.0 alias=sub_feature, colsample_bytree
-        # min_data_in_leaf   default=20, type=int
-        # min_sum_hessian_in_leaf    default=1e-3, type=double
-        # learning_rate      default=0.1
-        # max_bin            default=255, type=int
-        # bagging_fraction   default=1.0, type=double, 0.0 < bagging_fraction < 1.0
-        # bagging_freq       default=0
-        # lambda_l1   default=0, type=double, alias=reg_alpha
-        # lambda_l2   default=0, type=double, alias=reg_lambda
     }
     train_r = train.drop(class_names,axis=1)
 
@@ -1125,7 +1162,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
