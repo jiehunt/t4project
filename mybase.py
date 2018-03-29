@@ -506,7 +506,7 @@ def m_xgb_model(train, test, feature_type):
           'min_child_weight' : 2.7958,
           'max_delta_step' : 3,
           'seed' : 1001,
-          'scale_pos_weight':9, # 40000000 : 480000
+          'scale_pos_weight':99, # 40000000 : 480000
           'reg_alpha':0.0823, # default 0
           'reg_lambda':1.3776, # default 1
 
@@ -549,7 +549,7 @@ def m_xgb_model(train, test, feature_type):
             dvalid = xgb.DMatrix(X_valid_n, Y_valid_n)
 
             watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
-            model = xgb.train(params, dtrain, 100, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=100)
+            model = xgb.train(params, dtrain, 5, watchlist, maximize=True, early_stopping_rounds = 1, verbose_eval=1)
 
             if n_fold > 0:
                 pred = model.predict(dtest, ntree_limit=model.best_ntree_limit) + pred
@@ -565,7 +565,7 @@ def m_xgb_model(train, test, feature_type):
             else :
                 pred = pred + model.predict(dtest, ntree_limit=model.best_ntree_limit)
 
-            del X_train_n,Y_train_n,X_valid_n, Y_valid_n
+            del X_train_n,Y_train_n,X_valid_n, Y_valid_n, dtrain, dvalid
             gc.collect()
 
         class_pred = pd.DataFrame(class_pred)
@@ -1171,7 +1171,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'xgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
