@@ -583,7 +583,8 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     class_weight = {0:.01,1:.99} # magic
     model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, class_weight='auto',
         validation_data = (x_valid, y_valid),
-        shuffle=True, verbose=1, callbacks = [ra_val, check_point, early_stop])
+        shuffle=True, verbose=1)
+        #, callbacks = [ra_val, check_point, early_stop])
 
     return model
 
@@ -1124,7 +1125,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'xgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
@@ -1149,7 +1150,7 @@ if __name__ == '__main__':
     #     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
     # categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
-    # target = 'is_attributed'
+    # target = ['is_attributed']
     # Y = train[target]
     # train = train[predictors]
 
