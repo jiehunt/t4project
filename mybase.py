@@ -175,7 +175,7 @@ def f_get_train_test_data(data_set, feature_type):
 
     with timer('Binding the training and test set together...'):
         len_train = len(train)
-        print('The initial size of the train set is', len_train)
+        # print('The initial size of the train set is', len_train)
         train=train.append(test)
 
 
@@ -183,7 +183,7 @@ def f_get_train_test_data(data_set, feature_type):
         target = 'is_attributed'
         train.loc[train[target].isnull(),target] = 99
         train[target] = train[target].astype('uint8')
-        print (train.info())
+        # print (train.info())
         del test
         gc.collect()
 
@@ -1103,7 +1103,8 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
 
     with timer("Goto Train NN Model"):
         # folds = StratifiedKFold(n_splits=splits, shuffle=True, random_state=1)
-        folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.05, random_state = 182)
+        with timer("Goto StratifiedShuffleSplit ..."):
+            folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.05, random_state = 182)
 
         for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[feature_names], train[target])):
 
