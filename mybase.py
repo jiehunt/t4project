@@ -498,7 +498,7 @@ def m_xgb_model(train, test, feature_type):
             X_valid_n = train[predictors].iloc[val_idx]
             Y_valid_n = Y.iloc[val_idx]
             dtrain = xgb.DMatrix(X_train_n, Y_train_n)
-            dvalid = xgb.DMatrix(X_valid, Y_valid)
+            dvalid = xgb.DMatrix(X_valid_n, Y_valid_n)
 
             watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
             model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=5)
@@ -541,7 +541,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     emb_n = 50
     dense_n = 1000
     batch_size = 20000
-    epochs = 2
+    epochs = 5
     lr_init, lr_fin = 0.001, 0.0001
     dr = 0.2
     lr = 0.001
@@ -583,7 +583,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     class_weight = {0:.01,1:.99} # magic
     model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, class_weight=class_weight,
         validation_data = (x_valid, y_valid),
-        shuffle=True, verbose=2, callbacks = [ra_val, check_point, early_stop])
+        shuffle=True, verbose=1, callbacks = [ra_val, check_point, early_stop])
 
     return model
 
@@ -1060,7 +1060,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
             X_valid_n = train[feature_names].iloc[val_idx]
             Y_valid_n = train[target].iloc[val_idx]
 
-            if model_type == 'nn': # gru
+            if model_type == 'nn': # nn
                 file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type)+ str(n_fold) + '.hdf5'
                 if os.path.exists(file_path):
                     model = load_model(file_path)
@@ -1115,18 +1115,18 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'xgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
     print (train.info())
     print (test.info())
-    pred =  app_train(train, test, model_type,feature_type)
+    # pred =  app_train(train, test, model_type,feature_type)
 
     ##################################
     # traing for nn
     ##################################
-    # pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    pred = app_train_nn(train, test, model_type, feature_type, data_set)
     ##################################
 
     ##################################
