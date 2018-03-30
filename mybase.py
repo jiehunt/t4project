@@ -564,6 +564,7 @@ def m_xgb_model(train, test, model_type,feature_type,  data_type):
         model = xgb.train(params, dtrain, 5, watchlist, maximize=True, xgb_model=my_model,
             early_stopping_rounds = 1, verbose_eval=5)
 
+        model.save_model(file_path)
         pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
 
     else:
@@ -600,6 +601,7 @@ def m_xgb_model(train, test, model_type,feature_type,  data_type):
             class_pred[val_idx] = model.predict(xgb.DMatrix(X_valid_n), ntree_limit=model.best_ntree_limit)
             score = roc_auc_score(Y.iloc[val_idx], class_pred[val_idx])
             print("\t Fold %d : %.6f in %3d rounds" % (n_fold + 1, score, model.best_iteration))
+            model.save_model(file_path)
 
             if n_fold > 0:
                 pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
@@ -1224,47 +1226,50 @@ def g_make_pseudo_submission(outfile, m_pred):
 AUCbest = -1.
 ITERbest = 0
 
+def h_tuning_bayesian():
+    ##################################
+    # use bayesian to find param for xgb
+    ##################################
+    if feature_type == 'andy_org':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    elif feature_type == 'andy_doufu':
+        predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+
+    target = ['is_attributed']
+    Y = train[target]
+    train = train[predictors]
+
+    dtrain = xgb.DMatrix(train, label=Y)
+
+    app_tune_xgb_bayesian(train, feature_type)
+    ##################################
+    return
+
 
 if __name__ == '__main__':
 
     data_set = 'set001' # set0 set1 setfull set01
     model_type = 'lgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
-    train, test = f_get_train_test_data(data_set, feature_type)
 
-    print (data_set, model_type, feature_type)
-    print (train.info())
-    print (test.info())
     ##################################
     # traing for nn
     ##################################
+    train, test = f_get_train_test_data(data_set, feature_type)
+    print (data_set, model_type, feature_type)
+    print (train.info())
+    print (test.info())
     if model_type == 'xgb' or model_type == 'lgb':
         print ("goto train ", str(model_type) )
         pred =  app_train(train, test, model_type,feature_type, data_set)
     elif model_type == 'nn':
         pred = app_train_nn(train, test, model_type, feature_type, data_set)
-    ##################################
 
-    ##################################
-    # use bayesian to find param for xgb
-    ##################################
-    # if feature_type == 'andy_org':
-    #     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
-    # elif feature_type == 'andy_doufu':
-    #     predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
-    # categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
-
-    # target = ['is_attributed']
-    # Y = train[target]
-    # train = train[predictors]
-
-    # dtrain = xgb.DMatrix(train, label=Y)
-
-    # app_tune_xgb_bayesian(train, feature_type)
-    ##################################
-
-    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    outfile = 'oof_test/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
     g_make_single_submission(outfile, pred)
+    ##################################
+
 
     # outfile = 'pseudo/' + str(data_set) + str(model_type) + str(feature_type) + '_pseudo_test.csv'
     # g_make_pseudo_submission(outfile, pred)
