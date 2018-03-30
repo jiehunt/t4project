@@ -1246,6 +1246,19 @@ def h_tuning_bayesian():
     ##################################
     return
 
+def my_simple_blend():
+    path_0 ='./output/set001lgbandy_org.csv'
+    path_1 ='./output/set01nnandy_org.csv'
+    path_2 ='./output/set01xgbandy_org.csv'
+
+    file0 = pd.read_csv(path_0)
+    file1 = pd.read_csv(path_1)
+    file2 = pd.read_csv(path_2)
+    pred = (file0['is_attributed'] + file1['is_attributed']+ file2['is_attributed']) /3
+    outfile = 'output/blend_set01nn_set001lgb_set01xgb_'+ str(feature_type) + '.csv'
+    g_make_single_submission(outfile, pred)
+
+    return
 
 if __name__ == '__main__':
 
@@ -1253,21 +1266,22 @@ if __name__ == '__main__':
     model_type = 'lgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
 
+
     ##################################
     # traing for nn
     ##################################
-    train, test = f_get_train_test_data(data_set, feature_type)
-    print (data_set, model_type, feature_type)
-    print (train.info())
-    print (test.info())
-    if model_type == 'xgb' or model_type == 'lgb':
-        print ("goto train ", str(model_type) )
-        pred =  app_train(train, test, model_type,feature_type, data_set)
-    elif model_type == 'nn':
-        pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    # train, test = f_get_train_test_data(data_set, feature_type)
+    # print (data_set, model_type, feature_type)
+    # print (train.info())
+    # print (test.info())
+    # if model_type == 'xgb' or model_type == 'lgb':
+    #     print ("goto train ", str(model_type) )
+    #     pred =  app_train(train, test, model_type,feature_type, data_set)
+    # elif model_type == 'nn':
+    #     pred = app_train_nn(train, test, model_type, feature_type, data_set)
 
-    outfile = 'oof_test/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    g_make_single_submission(outfile, pred)
+    # outfile = 'oof_test/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    # g_make_single_submission(outfile, pred)
     ##################################
 
 
