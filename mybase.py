@@ -449,14 +449,14 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
                               )
 
             evals_results = {}
-            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type)+ str(n_fold) + '.hdf5'
+            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
             if os.path.exists(file_path):
                 my_mode = file_path
             else:
                 my_mode = None
             model = lgb.train(params, dtrain, valid_sets=[dtrain, dvalid], valid_names=['train','valid'],
                          evals_result=evals_results, num_boost_round=1000, early_stopping_rounds=50,
-                         init_model = my_mode
+                         init_model = my_mode,
                          verbose_eval=True, feval=None)
 
             class_pred[val_idx] = model.predict(X_valid_n, num_iteration=model.best_iteration)
