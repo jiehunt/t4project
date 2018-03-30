@@ -376,7 +376,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
         }
-    one_fold = False
+    one_fold =True
     splits = 3
     if one_fold == True:
         splits = 1
@@ -402,20 +402,29 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
         del val
         gc.collect()
 
-
         evals_results = {}
 
+        file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type)+ str(n_fold) + '.hdf5'
+        if os.path.exists(file_path):
+            my_mode = file_path
+        else:
+            my_mode = None
         model = lgb.train(params,
                          dtrain,
                          valid_sets=[dtrain, dvalid],
                          valid_names=['train','valid'],
                          evals_result=evals_results,
-                         num_boost_round=1000,
-                         early_stopping_rounds=50,
+                         # num_boost_round=1000,
+                         # early_stopping_rounds=50,
+                         num_boost_round=5,
+                         early_stopping_rounds=1,
                          verbose_eval=True,
+                         init_model = my_mode
                          feval=None)
+        model.save_model(file_path)
 
         pred = model.predict(test[predictors], num_iteration=model.best_iteration)
+
     else:
         pred = np.zeros( shape=(len(test), 1) )
 
@@ -440,6 +449,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
                               )
 
             evals_results = {}
+            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type)+ str(n_fold) + '.hdf5'
             model = lgb.train(params, dtrain, valid_sets=[dtrain, dvalid], valid_names=['train','valid'],
                          evals_result=evals_results, num_boost_round=1000, early_stopping_rounds=50,
                          verbose_eval=True, feval=None)
@@ -463,8 +473,8 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
         print("Full roc auc scores : %.6f" % roc_auc_score(train['is_attributed'], class_pred[oof_names]))
 
         # Save OOF predictions - may be interesting for stacking...
-        file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
-        class_pred.to_csv(file_name, index=False, float_format="%.6f")
+        # file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
+        # class_pred.to_csv(file_name, index=False, float_format="%.6f")
 
 
     pred = pred / splits
@@ -1198,7 +1208,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set001' # set0 set1 setfull set01
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
