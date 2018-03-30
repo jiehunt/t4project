@@ -543,7 +543,7 @@ def m_xgb_model(train, test, feature_type, model_type, data_type):
     #         'max_bin': 16,
     #         'tree_method':'gpu_hist',
     #       'silent': True}
-    one_fold = False
+    one_fold = True
     if one_fold == True:
         splits = 1
         X_train, X_valid, Y_train, Y_valid = train_test_split(train, Y, test_size=0.05, random_state=99)
@@ -1078,7 +1078,7 @@ def app_train(train, test, model_type,feature_type, data_type):
         if model_type == 'lgb':
             pred = m_lgb_model(train, test, model_type, feature_type, data_type)
         elif model_type == 'xgb':
-            pred = m_xgb_model(train, test, feature_type)
+            pred = m_xgb_model(train, test, model_type, feature_type, data_type)
     return pred
 
 def app_tune_xgb_bayesian(train, feature_type):
