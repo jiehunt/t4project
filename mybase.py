@@ -488,7 +488,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
     pred.columns = target
     return pred
 
-def m_xgb_model(train, test, feature_type):
+def m_xgb_model(train, test, feature_type, model_type, data_type):
 
     if feature_type == 'andy_org':
         predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
@@ -502,48 +502,48 @@ def m_xgb_model(train, test, feature_type):
     test = test[predictors]
 
     splits = 3
-    # params = {'eta': 0.3,
-    #       'tree_method': "gpu_hist",
-    #       'grow_policy': "lossguide",
-    #       'max_leaves': 1400,
-    #       'max_depth': 0,
-    #       'subsample': 0.9,
-    #       'colsample_bytree': 0.7,
-    #       'colsample_bylevel':0.7,
-    #       'min_child_weight':0,
-    #       'alpha':4,
-    #       'objective': 'binary:logistic',
-    #       'scale_pos_weight':9,
-    #       'eval_metric': 'auc',
-    #       'nthread':8,
-    #       'random_state': 99,
-    #         'gpu_id': 0,
-    #         'max_bin': 16,
-    #         'tree_method':'gpu_hist',
-    #       'silent': True}
     params = {'eta': 0.3,
+          'tree_method': "gpu_hist",
           'grow_policy': "lossguide",
+          'max_leaves': 1400,
+          'max_depth': 0,
+          'subsample': 0.9,
+          'colsample_bytree': 0.7,
+          'colsample_bylevel':0.7,
+          'min_child_weight':0,
+          'alpha':4,
           'objective': 'binary:logistic',
-
-          'max_depth' : 4,
-          'gamma' : 9.9407,
-          'eta' : 0.6223,
-          'subsample' : 0.6875,
-          'colsample_bytree' : 0.6915,
-          'min_child_weight' : 2.7958,
-          'max_delta_step' : 3,
-          'seed' : 1001,
-          'scale_pos_weight':99, # 40000000 : 480000
-          'reg_alpha':0.0823, # default 0
-          'reg_lambda':1.3776, # default 1
-
+          'scale_pos_weight':99,
           'eval_metric': 'auc',
+          'nthread':8,
           'random_state': 99,
             'gpu_id': 0,
             'max_bin': 16,
             'tree_method':'gpu_hist',
           'silent': True}
-    one_fold = False
+    # params = {'eta': 0.3,
+    #       'grow_policy': "lossguide",
+    #       'objective': 'binary:logistic',
+
+    #       'max_depth' : 4,
+    #       'gamma' : 9.9407,
+    #       'eta' : 0.6223,
+    #       'subsample' : 0.6875,
+    #       'colsample_bytree' : 0.6915,
+    #       'min_child_weight' : 2.7958,
+    #       'max_delta_step' : 3,
+    #       'seed' : 1001,
+    #       'scale_pos_weight':99, # 40000000 : 480000
+    #       'reg_alpha':0.0823, # default 0
+    #       'reg_lambda':1.3776, # default 1
+
+    #       'eval_metric': 'auc',
+    #       'random_state': 99,
+    #         'gpu_id': 0,
+    #         'max_bin': 16,
+    #         'tree_method':'gpu_hist',
+    #       'silent': True}
+    one_fold = True
     if one_fold == True:
         splits = 1
         X_train, X_valid, Y_train, Y_valid = train_test_split(train, Y, test_size=0.05, random_state=99)
@@ -555,14 +555,21 @@ def m_xgb_model(train, test, feature_type):
         dtest = xgb.DMatrix(test)
 
         watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
-        model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=5)
+        file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) +'.hdf5'
+        if os.path.exists(file_path):
+            my_model = file_path
+        else:
+            my_model = None
+        # model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, early_stopping_rounds = 50, verbose_eval=5)
+        model = xgb.train(params, dtrain, 5, watchlist, maximize=True, xgb_model=my_model,
+            early_stopping_rounds = 1, verbose_eval=5)
 
         pred = model.predict(dtest, ntree_limit=model.best_ntree_limit)
 
     else:
         pred = np.zeros( shape=(len(test), 1) )
 
-        folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.05, random_state = 182)
+        folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.005, random_state = 182)
 
         dtest = xgb.DMatrix(test)
         class_pred = np.zeros(len(train))
@@ -576,6 +583,12 @@ def m_xgb_model(train, test, feature_type):
             dvalid = xgb.DMatrix(X_valid_n, Y_valid_n)
 
             watchlist = [(dtrain, 'train'), (dvalid, 'valid')]
+
+            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) +'_'+str(n_fold) +'.hdf5'
+            if os.path.exists(file_path):
+                my_model = file_path
+            else:
+                my_model = None
             model = xgb.train(params, dtrain, 5, watchlist, maximize=True, early_stopping_rounds = 1, verbose_eval=1)
 
             if n_fold > 0:
@@ -601,8 +614,8 @@ def m_xgb_model(train, test, feature_type):
         print("Full roc auc scores : %.6f" % roc_auc_score(Y, class_pred[oof_names]))
 
         # Save OOF predictions - may be interesting for stacking...
-        file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
-        class_pred.to_csv(file_name, index=False, float_format="%.6f")
+        # file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
+        # class_pred.to_csv(file_name, index=False, float_format="%.6f")
 
 
     pred = pred / splits
@@ -1214,7 +1227,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'lgb' # xgb lgb nn
+    model_type = 'xgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
