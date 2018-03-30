@@ -169,6 +169,14 @@ def f_get_train_test_data(data_set, feature_type):
             train = pd.concat([train_1, train_0])
             del train_0, train_1
             gc.collect()
+        elif data_set == 'set001':
+            path_train ='./input/train_1.csv'
+            train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            path_train ='./input/train_00.csv'
+            train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            train = pd.concat([train_1, train_0])
+            del train_0, train_1
+            gc.collect()
 
     with timer('Loading the test data...'):
         test = pd.read_csv(path_test, dtype=dtypes, header=0, usecols=test_cols)
@@ -1189,8 +1197,8 @@ ITERbest = 0
 
 if __name__ == '__main__':
 
-    data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'lgb' # xgb lgb nn
+    data_set = 'set001' # set0 set1 setfull set01
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
