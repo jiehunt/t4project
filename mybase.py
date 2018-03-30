@@ -456,7 +456,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
                 my_model = None
             model = lgb.train(params, dtrain, valid_sets=[dtrain, dvalid], valid_names=['train','valid'],
                          evals_result=evals_results, num_boost_round=1000, early_stopping_rounds=50,
-                         init_model = my_mode,
+                         init_model = my_model,
                          verbose_eval=True, feval=None)
 
             model.save_model(file_path)
@@ -488,7 +488,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
     pred.columns = target
     return pred
 
-def m_xgb_model(train, test, feature_type, model_type, data_type):
+def m_xgb_model(train, test, model_type,feature_type,  data_type):
 
     if feature_type == 'andy_org':
         predictors = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
