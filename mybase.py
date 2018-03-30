@@ -363,7 +363,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
         'reg_lambda': 0,
         'nthread': 4,
         'verbose': 0,
-        'scale_pos_weight':9,
+        'scale_pos_weight':99,
         "device": "gpu",
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
@@ -411,7 +411,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
     else:
         pred = np.zeros( shape=(len(test), 1) )
 
-        folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.05, random_state = 182)
+        folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.01, random_state = 182)
 
         class_pred = np.zeros(len(train))
 
@@ -444,6 +444,9 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
                 pred = model.predict(test[predictors], num_iteration=model.best_iteration) + pred
             else:
                 pred = model.predict(test[predictors], num_iteration=model.best_iteration)
+
+            del X_valid_n,Y_train_n,X_train_n,Y_valid_n,dtrain, dvalid
+            gc.collect()
 
 
         class_pred = pd.DataFrame(class_pred)
@@ -1031,11 +1034,11 @@ def app_tune_xgb(train, feature_type):
     return
 
 
-def app_train(train, test, model_type,feature_type):
+def app_train(train, test, model_type,feature_type, data_type):
 
     with timer("goto train..."):
         if model_type == 'lgb':
-            pred = m_lgb_model(train, test, feature_type)
+            pred = m_lgb_model(train, test, model_type, feature_type, data_type)
         elif model_type == 'xgb':
             pred = m_xgb_model(train, test, feature_type)
     return pred
@@ -1187,7 +1190,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
@@ -1198,7 +1201,8 @@ if __name__ == '__main__':
     # traing for nn
     ##################################
     if model_type == 'xgb' or model_type == 'lgb':
-        pred =  app_train(train, test, model_type,feature_type)
+        print ("goto train ", str(model_type) )
+        pred =  app_train(train, test, model_type,feature_type, data_set)
     elif model_type == 'nn':
         pred = app_train_nn(train, test, model_type, feature_type, data_set)
     ##################################
