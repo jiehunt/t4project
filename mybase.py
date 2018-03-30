@@ -376,7 +376,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
         }
-    one_fold =False
+    one_fold =True
     splits = 3
     if one_fold == True:
         splits = 1
@@ -406,9 +406,9 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
 
         file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
         if os.path.exists(file_path):
-            my_mode = file_path
+            my_model = file_path
         else:
-            my_mode = None
+            my_model = None
         model = lgb.train(params,
                          dtrain,
                          valid_sets=[dtrain, dvalid],
@@ -419,7 +419,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
                          num_boost_round=5,
                          early_stopping_rounds=1,
                          verbose_eval=True,
-                         init_model = my_mode,
+                         init_model = my_model,
                          feval=None)
         model.save_model(file_path)
 
@@ -449,16 +449,17 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
                               )
 
             evals_results = {}
-            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) +'_'+str(n_fold) +'.hdf5'
             if os.path.exists(file_path):
-                my_mode = file_path
+                my_model = file_path
             else:
-                my_mode = None
+                my_model = None
             model = lgb.train(params, dtrain, valid_sets=[dtrain, dvalid], valid_names=['train','valid'],
                          evals_result=evals_results, num_boost_round=1000, early_stopping_rounds=50,
                          init_model = my_mode,
                          verbose_eval=True, feval=None)
 
+            model.save_model(file_path)
             class_pred[val_idx] = model.predict(X_valid_n, num_iteration=model.best_iteration)
             score = roc_auc_score(Y_valid_n, class_pred[val_idx])
             print("\t Fold %d : %.6f in %3d rounds" % (n_fold + 1, score, model.best_iteration))
@@ -1212,7 +1213,7 @@ ITERbest = 0
 
 if __name__ == '__main__':
 
-    data_set = 'set001' # set0 set1 setfull set01
+    data_set = 'set01' # set0 set1 setfull set01
     model_type = 'lgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
