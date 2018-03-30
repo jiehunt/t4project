@@ -388,14 +388,14 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
         train = train[:(len_train-round(r*len_train))]
         print('The size of the train set is ', len(train))
 
-        dtrain = lgb.Dataset(train[predictors].values, label=train[target].values,
+        dtrain = lgb.Dataset(train[predictors].values, label=train['is_attributed'].values,
                               feature_name=predictors,
                               categorical_feature=categorical
                               )
         del train
         gc.collect()
 
-        dvalid = lgb.Dataset(val[predictors].values, label=val[target].values,
+        dvalid = lgb.Dataset(val[predictors].values, label=val['is_attributed'].values,
                               feature_name=predictors,
                               categorical_feature=categorical
                               )
@@ -1147,7 +1147,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
             print ("type(Y_train_n) is", type(Y_train_n))
 
             if model_type == 'nn': # nn
-                file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type)+ str(n_fold) + '.hdf5'
+                file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
                 # if os.path.exists(file_path):
                 #     model = load_model(file_path)
                 # else:
@@ -1165,11 +1165,11 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
 
         oof_names = ['is_attributed_oof']
         class_pred.columns = oof_names
-        print("roc auc scores : %.6f" % roc_auc_score(train[target], class_pred[oof_names]))
+        print("roc auc scores : %.6f" % roc_auc_score(train['is_attributed'], class_pred[oof_names]))
 
         # Save OOF predictions - may be interesting for stacking...
-        file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
-        class_pred.to_csv(file_name, index=False, float_format="%.6f")
+        # file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
+        # class_pred.to_csv(file_name, index=False, float_format="%.6f")
 
         pred = pred / splits
         pred =pd.DataFrame(pred)
