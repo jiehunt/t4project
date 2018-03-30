@@ -543,7 +543,7 @@ def m_xgb_model(train, test, feature_type, model_type, data_type):
     #         'max_bin': 16,
     #         'tree_method':'gpu_hist',
     #       'silent': True}
-    one_fold = True
+    one_fold = False
     if one_fold == True:
         splits = 1
         X_train, X_valid, Y_train, Y_valid = train_test_split(train, Y, test_size=0.05, random_state=99)
@@ -589,7 +589,8 @@ def m_xgb_model(train, test, feature_type, model_type, data_type):
                 my_model = file_path
             else:
                 my_model = None
-            model = xgb.train(params, dtrain, 5, watchlist, maximize=True, early_stopping_rounds = 1, verbose_eval=1)
+            model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, xgb_model=my_model
+                early_stopping_rounds = 50, verbose_eval=1, )
 
             if n_fold > 0:
                 pred = model.predict(dtest, ntree_limit=model.best_ntree_limit) + pred
