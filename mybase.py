@@ -576,10 +576,10 @@ def m_xgb_model(train, test, model_type,feature_type,  data_type):
         class_pred = np.zeros(len(train))
         for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train, Y)):
             print ("goto %d fold :" % n_fold)
-            X_train_n = train[predictors].iloc[trn_idx]
-            Y_train_n = Y.iloc[trn_idx]
-            X_valid_n = train[predictors].iloc[val_idx]
-            Y_valid_n = Y.iloc[val_idx]
+            X_train_n = train[predictors].iloc[trn_idx].values
+            Y_train_n = Y.iloc[trn_idx].values
+            X_valid_n = train[predictors].iloc[val_idx].values
+            Y_valid_n = Y.iloc[val_idx].values
             dtrain = xgb.DMatrix(X_train_n, Y_train_n)
             dvalid = xgb.DMatrix(X_valid_n, Y_valid_n)
 
@@ -1293,26 +1293,26 @@ def h_get_pseudo_data():
 
 if __name__ == '__main__':
 
-    data_set = 'set001' # set0 set1 setfull set01
-    model_type = 'lgb' # xgb lgb nn
+    data_set = 'set01' # set0 set1 setfull set01
+    model_type = 'xgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
 
-    h_get_pseudo_data()
+    # h_get_pseudo_data()
     ##################################
     # traing for nn
     ##################################
-    # train, test = f_get_train_test_data(data_set, feature_type)
-    # print (data_set, model_type, feature_type)
-    # print (train.info())
-    # print (test.info())
-    # if model_type == 'xgb' or model_type == 'lgb':
-    #     print ("goto train ", str(model_type) )
-    #     pred =  app_train(train, test, model_type,feature_type, data_set)
-    # elif model_type == 'nn':
-    #     pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    train, test = f_get_train_test_data(data_set, feature_type)
+    print (data_set, model_type, feature_type)
+    print (train.info())
+    print (test.info())
+    if model_type == 'xgb' or model_type == 'lgb':
+        print ("goto train ", str(model_type) )
+        pred =  app_train(train, test, model_type,feature_type, data_set)
+    elif model_type == 'nn':
+        pred = app_train_nn(train, test, model_type, feature_type, data_set)
 
-    # outfile = 'oof_test/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    # g_make_single_submission(outfile, pred)
+    outfile = 'oof_test/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    g_make_single_submission(outfile, pred)
     ##################################
 
 
