@@ -419,7 +419,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
                          num_boost_round=5,
                          early_stopping_rounds=1,
                          verbose_eval=True,
-                         init_model = my_mode
+                         init_model = my_mode,
                          feval=None)
         model.save_model(file_path)
 
