@@ -589,7 +589,7 @@ def m_xgb_model(train, test, feature_type, model_type, data_type):
                 my_model = file_path
             else:
                 my_model = None
-            model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, xgb_model=my_model
+            model = xgb.train(params, dtrain, 1000, watchlist, maximize=True, xgb_model=my_model,
                 early_stopping_rounds = 50, verbose_eval=1, )
 
             if n_fold > 0:
