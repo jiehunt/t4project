@@ -419,16 +419,16 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
     else:
         pred = np.zeros( shape=(len(test), 1) )
 
-        folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.01, random_state = 182)
+        folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.001, random_state = 182)
 
         class_pred = np.zeros(len(train))
 
         for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[predictors], train[target])):
             print ("goto %d fold :" % n_fold)
-            X_train_n = train[predictors].iloc[trn_idx]
-            Y_train_n = train[target].iloc[trn_idx]
-            X_valid_n = train[predictors].iloc[val_idx]
-            Y_valid_n = train[target].iloc[val_idx]
+            X_train_n = train[predictors].iloc[trn_idx].values
+            Y_train_n = train[target].iloc[trn_idx].values.tolist()
+            X_valid_n = train[predictors].iloc[val_idx].values
+            Y_valid_n = train[target].iloc[val_idx].values.tolist()
             dtrain = lgb.Dataset(X_train_n, label=Y_train_n,
                               feature_name=predictors,
                               categorical_feature=categorical
@@ -1198,7 +1198,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set001' # set0 set1 setfull set01
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
