@@ -1258,6 +1258,37 @@ def my_simple_blend():
     outfile = 'output/blend_set01nn_set001lgb_set01xgb_'+ str(feature_type) + '.csv'
     g_make_single_submission(outfile, pred)
 
+def h_get_pseudo_data():
+    path_test = './input/test.csv'
+    path_sub = 'output/blend_set01nn_set001lgb_andy_org.csv'
+    test_cols = ['ip', 'app', 'device', 'os', 'channel', 'click_time']
+    sub_cols = ['is_attributed']
+
+    dtypes = {
+            'ip'            : 'uint32',
+            'app'           : 'uint16',
+            'device'        : 'uint16',
+            'os'            : 'uint16',
+            'channel'       : 'uint16',
+            'is_attributed' : 'uint8',
+            'click_id'      : 'uint32'
+            }
+
+    with timer('Loading the submission data...'):
+        sub = pd.read_csv(path_sub, header=0, usecols=sub_cols)
+
+
+    sub['is_attributed'] = sub['is_attributed'].apply(lambda x: 1 if x >= 0.5 else 0 )
+
+    with timer('Loading the test data...'):
+        test = pd.read_csv(path_test, dtype=dtypes, header=0, usecols=test_cols)
+
+    pseudo_df = pd.concat([test, sub],axis=1)
+    print (pseudo_df.info())
+
+    outfile = 'pseudo/' + 'pseudo.csv'
+    pseudo_df.to_csv(outfile, index=False, float_format="%.6f")
+
     return
 
 if __name__ == '__main__':
@@ -1266,7 +1297,7 @@ if __name__ == '__main__':
     model_type = 'lgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
 
-
+    h_get_pseudo_data()
     ##################################
     # traing for nn
     ##################################
