@@ -423,12 +423,12 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
 
         class_pred = np.zeros(len(train))
 
-        for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[predictors], train[target])):
+        for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[predictors], train['is_attributed'])):
             print ("goto %d fold :" % n_fold)
             X_train_n = train[predictors].iloc[trn_idx].values
-            Y_train_n = train[target].iloc[trn_idx].values.tolist()
+            Y_train_n = train['is_attributed'].iloc[trn_idx].values
             X_valid_n = train[predictors].iloc[val_idx].values
-            Y_valid_n = train[target].iloc[val_idx].values.tolist()
+            Y_valid_n = train['is_attributed'].iloc[val_idx].values
             dtrain = lgb.Dataset(X_train_n, label=Y_train_n,
                               feature_name=predictors,
                               categorical_feature=categorical
@@ -460,7 +460,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
         class_pred = pd.DataFrame(class_pred)
         oof_names = ['is_attributed_oof']
         class_pred.columns = oof_names
-        print("Full roc auc scores : %.6f" % roc_auc_score(train[target], class_pred[oof_names]))
+        print("Full roc auc scores : %.6f" % roc_auc_score(train['is_attributed'], class_pred[oof_names]))
 
         # Save OOF predictions - may be interesting for stacking...
         file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
@@ -603,7 +603,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     emb_n = 50
     dense_n = 1000
     batch_size = 20000
-    epochs = 5
+    epochs = 2
     lr_init, lr_fin = 0.001, 0.0001
     dr = 0.2
     lr = 0.001
@@ -1117,7 +1117,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
     with timer("Goto Train NN Model"):
         # folds = StratifiedKFold(n_splits=splits, shuffle=True, random_state=1)
         with timer("Goto StratifiedShuffleSplit ..."):
-            folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.05, random_state = 182)
+            folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.005, random_state = 182)
 
         for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[feature_names], train[target])):
 
@@ -1198,7 +1198,7 @@ ITERbest = 0
 if __name__ == '__main__':
 
     data_set = 'set001' # set0 set1 setfull set01
-    model_type = 'lgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
