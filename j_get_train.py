@@ -70,16 +70,21 @@ def h_get_zero():
             }
 
     path_train_0 ='./input/train_all0.csv'
-    df = pd.read_csv(path_train_0, dtype=dtypes, nrows=range(DATA_NUMBER, 2*DATA_NUMBER))
+    list_row = []
+    list_row.appand(range(1, DATA_NUMBER))
+    list_row.appand(range(2*DATA_NUMBER, 3*DATA_NUMBER))
+    df = pd.read_csv(path_train_0, dtype=dtypes, skiprows=list_row)
     path_train_1 ='./input/train_00.csv'
     df.to_csv(path_train_1, index=False)
-    del df
+    print (len(df))
+    del df, list_row 
     gc.collect()
 
     path_train_0 ='./input/train_all0.csv'
-    df = pd.read_csv(path_train_0, dtype=dtypes, nrows=range(1,DATA_NUMBER))
+    df = pd.read_csv(path_train_0, dtype=dtypes, skiprows=range(DATA_NUMBER, 3*DATA_NUMBER))
     path_train_2 ='./input/train_01.csv'
     df.to_csv(path_train_0, index=False)
+    print (len(df))
     del df
     gc.collect()
 
@@ -87,6 +92,7 @@ def h_get_zero():
     df = pd.read_csv(path_train_0, dtype=dtypes, skiprows=range(1, 2*DATA_NUMBER))
     path_train_1 ='./input/train_02.csv'
     df.to_csv(path_train_1, index=False)
+    print (len(df))
     del df
     gc.collect()
 
