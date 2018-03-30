@@ -376,7 +376,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
         }
-    one_fold =True
+    one_fold =False
     splits = 3
     if one_fold == True:
         splits = 1
@@ -543,7 +543,7 @@ def m_xgb_model(train, test, feature_type, model_type, data_type):
     #         'max_bin': 16,
     #         'tree_method':'gpu_hist',
     #       'silent': True}
-    one_fold = True
+    one_fold = False
     if one_fold == True:
         splits = 1
         X_train, X_valid, Y_train, Y_valid = train_test_split(train, Y, test_size=0.05, random_state=99)
@@ -1227,8 +1227,8 @@ ITERbest = 0
 
 if __name__ == '__main__':
 
-    data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'xgb' # xgb lgb nn
+    data_set = 'set001' # set0 set1 setfull set01
+    model_type = 'lgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
     train, test = f_get_train_test_data(data_set, feature_type)
 
