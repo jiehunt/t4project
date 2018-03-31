@@ -1191,13 +1191,13 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
         with timer("Goto predict test Data"):
             pred = model.predict(test)
 
-        with timer("Goto prepare oof Data"):
-            oof_valid = h_get_keras_data(train[feature_names], feature_type)
-            class_pred =pd.DataFrame(model.predict(oof_valid))
+        # with timer("Goto prepare oof Data"):
+        #     oof_valid = h_get_keras_data(train[feature_names], feature_type)
+        #     class_pred =pd.DataFrame(model.predict(oof_valid))
 
-        oof_names = ['is_attributed_oof']
-        class_pred.columns = oof_names
-        print("roc auc scores : %.6f" % roc_auc_score(train['is_attributed'], class_pred[oof_names]))
+        # oof_names = ['is_attributed_oof']
+        # class_pred.columns = oof_names
+        # print("roc auc scores : %.6f" % roc_auc_score(train['is_attributed'], class_pred[oof_names]))
 
         # Save OOF predictions - may be interesting for stacking...
         # file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
