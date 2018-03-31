@@ -84,7 +84,7 @@ def h_get_zero():
     data0 = df.iloc[list_row]
     path_train_1 ='./input/train_002.csv'
     data0.to_csv(path_train_1, index=False)
-    print (len(data1))
+    print (len(data0))
     del data0
     gc.collect()
 
