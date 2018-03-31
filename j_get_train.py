@@ -72,27 +72,43 @@ def h_get_zero():
     path_train_0 ='./input/train_all0.csv'
     df = pd.read_csv(path_train_0, dtype=dtypes)
 
-    list_row = range(0,DATA_NUMBER)
+    list_row = range(0,len(df),2)
     data0 = df.iloc[list_row]
-    path_train_1 ='./input/train_00.csv'
+    path_train_1 ='./input/train_001.csv'
     data0.to_csv(path_train_1, index=False)
-    print (len(df))
-    del data0 
+    print (len(data0))
+    del data0
     gc.collect()
 
-    list_row = range(DATA_NUMBER,2*DATA_NUMBER)
+    list_row = range(1,len(df),2)
     data0 = df.iloc[list_row]
-    path_train_1 ='./input/train_01.csv'
+    path_train_1 ='./input/train_002.csv'
     data0.to_csv(path_train_1, index=False)
-    del data0 
+    print (len(data1))
+    del data0
     gc.collect()
 
-    list_row = range(DATA_NUMBER*2,len(df))
-    data0 = df.iloc[list_row]
-    path_train_1 ='./input/train_02.csv'
-    data0.to_csv(path_train_1, index=False)
-    del data0 
-    gc.collect()
+    # list_row = range(0,DATA_NUMBER)
+    # data0 = df.iloc[list_row]
+    # path_train_1 ='./input/train_00.csv'
+    # data0.to_csv(path_train_1, index=False)
+    # print (len(df))
+    # del data0
+    # gc.collect()
+
+    # list_row = range(DATA_NUMBER,2*DATA_NUMBER)
+    # data0 = df.iloc[list_row]
+    # path_train_1 ='./input/train_01.csv'
+    # data0.to_csv(path_train_1, index=False)
+    # del data0
+    # gc.collect()
+
+    # list_row = range(DATA_NUMBER*2,len(df))
+    # data0 = df.iloc[list_row]
+    # path_train_1 ='./input/train_02.csv'
+    # data0.to_csv(path_train_1, index=False)
+    # del data0
+    # gc.collect()
     return
 
 
