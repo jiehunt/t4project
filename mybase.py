@@ -177,6 +177,22 @@ def f_get_train_test_data(data_set, feature_type):
             train = pd.concat([train_1, train_0])
             del train_0, train_1
             gc.collect()
+        elif data_set == 'set20':
+            path_train ='./input/train_1.csv'
+            train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            path_train ='./input/train_001.csv'
+            train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            train = pd.concat([train_1, train_0])
+            del train_0, train_1
+            gc.collect()
+        elif data_set == 'set21':
+            path_train ='./input/train_1.csv'
+            train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            path_train ='./input/train_002.csv'
+            train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            train = pd.concat([train_1, train_0])
+            del train_0, train_1
+            gc.collect()
 
     with timer('Loading the test data...'):
         test = pd.read_csv(path_test, dtype=dtypes, header=0, usecols=test_cols)
@@ -1292,9 +1308,12 @@ def h_get_pseudo_data():
     return
 
 if __name__ == '__main__':
-
-    data_set = 'set01' # set0 set1 setfull set01
-    model_type = 'xgb' # xgb lgb nn
+    # from andy :set0 set1 setfull
+    # sample all 1 and random 0 :set01
+    # sample all 1 and first part 0 :set001
+    # sample all 1 and half (1/2sample) 0: set20 set21
+    data_set = 'set20'
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
 
     # h_get_pseudo_data()
