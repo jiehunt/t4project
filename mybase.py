@@ -1252,6 +1252,9 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
         feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     elif feature_type == 'andy_doufu':
         feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    elif feature_type == 'pranav':
+        predictors = ['app','device','os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count',
+              'nip_day_test_hh', 'nip_day_hh', 'nip_hh_os', 'nip_hh_app', 'nip_hh_dev']
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
     target = ['is_attributed']
@@ -1388,9 +1391,9 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'lgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
-    use_pse = True
+    use_pse = False
 
     # h_get_pseudo_data()
     ##################################
