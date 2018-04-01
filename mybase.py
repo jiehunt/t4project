@@ -418,7 +418,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         print('The size of the validation set is ', len(val))
 
         new_list = list(set(range(len_train-1))- set(row_list))
-        train = train.ioc[new_list].values
+        train = train.iloc[new_list].values
         print('The size of the train set is ', len(train))
 
         if use_pse == True:
