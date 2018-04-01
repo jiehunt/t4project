@@ -411,14 +411,17 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         splits = 1
         len_train = len(train)
         r = 0.1 # the fraction of the train data to be used for validation
-        val = train[(len_train-round(r*len_train)):len_train]
+        row_list = random.sample(range(len_train-1), round(len_train*r))
+        # val = train[(len_train-round(r*len_train)):len_train]
+        val = train[row_list]
         print('The size of the validation set is ', len(val))
 
-        train = train[:(len_train-round(r*len_train))]
+        new_list = list(set(range(len_train-1))- set(row_list))
+        train = train[new_list]
         print('The size of the train set is ', len(train))
 
         if use_pse == True:
-            train = pd.concat([train, pseudo],axis=0)
+            train = pd.concat([train[predictors], pseudo[predictors]],axis=0)
 
         dtrain = lgb.Dataset(train[predictors].values, label=train['is_attributed'].values,
                               feature_name=predictors,
@@ -436,7 +439,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
 
         evals_results = {}
 
-        file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+        file_path = './model/'+'pse_'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
         if os.path.exists(file_path):
             my_model = file_path
         else:
@@ -466,13 +469,15 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
 
         for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[predictors], train['is_attributed'])):
             print ("goto %d fold :" % n_fold)
-            X_train_n = train[predictors].iloc[trn_idx].values
             if use_pse == True:
-                X_train_n = pd.concat([X_train_n, pseudo], axis=0)
+                X_train_n = train[predictors].iloc[trn_idx]
+                X_train_n = pd.concat([X_train_n, pseudo[predictors]], axis=0)
+                X_train_n = X_train_n.values
                 Y_train_n = train['is_attributed'].iloc[trn_idx]
                 Y_train_n = pd.concat([Y_train_n,pseudo['is_attributed']], axis=0)
                 Y_train_n = Y_train_n.values
             else:
+                X_train_n = train[predictors].iloc[trn_idx].values
                 Y_train_n = train['is_attributed'].iloc[trn_idx].values
             X_valid_n = train[predictors].iloc[val_idx].values
             Y_valid_n = train['is_attributed'].iloc[val_idx].values
@@ -487,7 +492,11 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
                               )
 
             evals_results = {}
-            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) +'_'+str(n_fold) +'.hdf5'
+            if use_pse == True:
+                file_path = './model/'+'pse_'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) +'_'+str(n_fold) +'.hdf5'
+            else :
+                file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) +'_'+str(n_fold) +'.hdf5'
+
             if os.path.exists(file_path):
                 my_model = file_path
             else:
