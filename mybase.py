@@ -268,17 +268,8 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
         path_pseudo = './pseudo/pseudo.csv'
         pseudo = pd.read_csv(path_pseudo, dtype=dtypes, header=0, usecols=['is_attributed'])
         pseudo = pseudo['is_attributed']
-        print ("pseudo file size is ", len(pseudo))
-        print ("test file size is ", len(test))
         new_test = test.reset_index(drop=True)
         pseudo = pd.concat ([new_test, pseudo], axis=1)
-        print ("test's head is ")
-        print (test.head())
-        print ("pseudo's head is ")
-        print (pseudo.head())
-        print ("pseudo file size is ", len(pseudo))
-        print ("test file size is ", len(test))
-        print (pseudo.info())
     else:
         pseudo = None
 
@@ -431,7 +422,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         print('The size of the train set is ', len(train))
 
         if use_pse == True:
-            train = pd.concat([train[predictors], pseudo[predictors]],axis=0)
+            train = pd.concat([train, pseudo],axis=0)
 
         dtrain = lgb.Dataset(train[predictors].values, label=train['is_attributed'].values,
                               feature_name=predictors,
