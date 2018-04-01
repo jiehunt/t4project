@@ -132,7 +132,7 @@ def h_get_keras_data(dataset, feature_type):
 # Feature
 """"""""""""""""""""""""""""""
 
-def f_get_train_test_data(data_set, feature_type):
+def f_get_train_test_data(data_set, feature_type, have_pse):
 
     path_train ='./input/train.csv'
     path_test = './input/test.csv'
@@ -196,6 +196,11 @@ def f_get_train_test_data(data_set, feature_type):
 
     with timer('Loading the test data...'):
         test = pd.read_csv(path_test, dtype=dtypes, header=0, usecols=test_cols)
+        len_test = len(test)
+
+    if use_pse == True:
+        path_pseudo = './pseudo/pseudo.csv'
+        pseudo = pd.read_csv(path_pseudo, dtype=dtypes, header=0, usecols=['is_attributed'])
 
     with timer('Binding the training and test set together...'):
         len_train = len(train)
@@ -260,12 +265,20 @@ def f_get_train_test_data(data_set, feature_type):
 
     test = train[len_train:].copy().drop( target, axis=1 )
     train = train[:len_train]
+
+    if use_pse == True:
+        pseudo = pd.concat ([test, pseudo], axis=1)
+        print (pseudo.info())
+        print (pseudo.head())
+    else:
+        pseudo = None
+
     print('The size of the test set is ', len(test))
     print('The type of the test set is ', type(test))
     print('The size of the train set is ', len(train))
     print('The tyep of the train set is ', type(train))
 
-    return train, test
+    return train, test, pseudo
 
 
 
@@ -1274,53 +1287,21 @@ def my_simple_blend():
     outfile = 'output/blend_set01nn_set001lgb_set01xgb_'+ str(feature_type) + '.csv'
     g_make_single_submission(outfile, pred)
 
-def h_get_pseudo_data():
-    path_test = './input/test.csv'
-    path_sub = 'output/blend_set01nn_set001lgb_andy_org.csv'
-    test_cols = ['ip', 'app', 'device', 'os', 'channel', 'click_time']
-    sub_cols = ['is_attributed']
-
-    dtypes = {
-            'ip'            : 'uint32',
-            'app'           : 'uint16',
-            'device'        : 'uint16',
-            'os'            : 'uint16',
-            'channel'       : 'uint16',
-            'is_attributed' : 'uint8',
-            'click_id'      : 'uint32'
-            }
-
-    with timer('Loading the submission data...'):
-        sub = pd.read_csv(path_sub, header=0, usecols=sub_cols)
-
-
-    sub['is_attributed'] = sub['is_attributed'].apply(lambda x: 1 if x >= 0.5 else 0 )
-
-    with timer('Loading the test data...'):
-        test = pd.read_csv(path_test, dtype=dtypes, header=0, usecols=test_cols)
-
-    pseudo_df = pd.concat([test, sub],axis=1)
-    print (pseudo_df.info())
-
-    outfile = 'pseudo/' + 'pseudo.csv'
-    pseudo_df.to_csv(outfile, index=False, float_format="%.6f")
-
-    return
-
 if __name__ == '__main__':
     # from andy :set0 set1 setfull
     # sample all 1 and random 0 :set01
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     feature_type = 'andy_org' # andy_org andy_doufu
+    use_pse = True
 
     # h_get_pseudo_data()
     ##################################
     # traing for nn
     ##################################
-    train, test = f_get_train_test_data(data_set, feature_type)
+    train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
     print (data_set, model_type, feature_type)
     print (train.info())
     print (test.info())
@@ -1330,7 +1311,7 @@ if __name__ == '__main__':
     elif model_type == 'nn':
         pred = app_train_nn(train, test, model_type, feature_type, data_set)
 
-    outfile = 'oof_test/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
     g_make_single_submission(outfile, pred)
     ##################################
 
