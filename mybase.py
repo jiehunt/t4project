@@ -516,7 +516,11 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
 
         evals_results = {}
 
-        file_path = './model/'+'pse_'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+        if use_pse == True:
+            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+        else :
+            file_path = './model/'+'pse_'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+
         if os.path.exists(file_path):
             my_model = file_path
         else:
@@ -1325,7 +1329,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
 """"""""""""""""""""""""""""""
 # Ganerate Result
 """"""""""""""""""""""""""""""
-def g_make_single_submission(outfile, m_pred):
+def g_make_single_submission(outfile, pred):
     submit = pd.read_csv('./input/test.csv', dtype='int', usecols=['click_id'])
     submit['is_attributed'] = pred
     submit.to_csv(outfile,float_format='%.3f', index=False)
@@ -1376,13 +1380,13 @@ def h_tuning_bayesian():
 def my_simple_blend():
     path_0 ='./output/set001lgbandy_org.csv'
     path_1 ='./output/set01nnandy_org.csv'
-    path_2 ='./output/set01xgbandy_org.csv'
+    path_2 ='./fun/set20lgbandy_org.csv'
 
     file0 = pd.read_csv(path_0)
     file1 = pd.read_csv(path_1)
     file2 = pd.read_csv(path_2)
     pred = (file0['is_attributed'] + file1['is_attributed']+ file2['is_attributed']) /3
-    outfile = 'output/blend_set01nn_set001lgb_set01xgb_'+ str(feature_type) + '.csv'
+    outfile = 'output/blend_set01nn_set001lgb_set20lgb_'+ str(feature_type) + '.csv'
     g_make_single_submission(outfile, pred)
 
 if __name__ == '__main__':
@@ -1391,16 +1395,17 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
     use_pse = False
 
+    # my_simple_blend()
     # h_get_pseudo_data()
     ##################################
     # traing for nn
     ##################################
     train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
-    print (data_set, model_type, feature_type)
+    print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
     print (train.info())
     print (test.info())
     if model_type == 'xgb' or model_type == 'lgb':
