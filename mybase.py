@@ -9,6 +9,7 @@ import requests, re, sys
 import logging
 import psutil
 import glob
+import random
 
 from scipy.sparse import hstack
 from scipy.sparse import csr_matrix
