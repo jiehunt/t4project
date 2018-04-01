@@ -1253,7 +1253,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
     elif feature_type == 'andy_doufu':
         feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
     elif feature_type == 'pranav':
-        predictors = ['app','device','os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count',
+        feature_names = ['app','device','os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count',
               'nip_day_test_hh', 'nip_day_hh', 'nip_hh_os', 'nip_hh_app', 'nip_hh_dev']
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
