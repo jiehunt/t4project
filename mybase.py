@@ -371,7 +371,7 @@ def m_old_lgb_model(csr_trn, csr_sub, train, test, feature_type):
         pred = pred/splits
         return pred
 
-def m_lgb_model(train, test, model_type, feature_type, data_type):
+def m_lgb_model(train, test, model_type, feature_type, data_type, pseudo):
 
     if feature_type == 'andy_org':
         predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
@@ -405,7 +405,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
         }
-    one_fold =False
+    one_fold = False
     splits = 3
     if one_fold == True:
         splits = 1
@@ -416,6 +416,9 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
 
         train = train[:(len_train-round(r*len_train))]
         print('The size of the train set is ', len(train))
+
+        if use_pse == True:
+            train = pd.concat([train, pseudo],axis=0)
 
         dtrain = lgb.Dataset(train[predictors].values, label=train['is_attributed'].values,
                               feature_name=predictors,
@@ -443,10 +446,10 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
                          valid_sets=[dtrain, dvalid],
                          valid_names=['train','valid'],
                          evals_result=evals_results,
-                         # num_boost_round=1000,
-                         # early_stopping_rounds=50,
-                         num_boost_round=5,
-                         early_stopping_rounds=1,
+                         num_boost_round=1000,
+                         early_stopping_rounds=50,
+                         # num_boost_round=5,
+                         # early_stopping_rounds=1,
                          verbose_eval=True,
                          init_model = my_model,
                          feval=None)
@@ -464,7 +467,13 @@ def m_lgb_model(train, test, model_type, feature_type, data_type):
         for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[predictors], train['is_attributed'])):
             print ("goto %d fold :" % n_fold)
             X_train_n = train[predictors].iloc[trn_idx].values
-            Y_train_n = train['is_attributed'].iloc[trn_idx].values
+            if use_pse == True:
+                X_train_n = pd.concat([X_train_n, pseudo], axis=0)
+                Y_train_n = train['is_attributed'].iloc[trn_idx]
+                Y_train_n = pd.concat([Y_train_n,pseudo['is_attributed']], axis=0)
+                Y_train_n = Y_train_n.values
+            else:
+                Y_train_n = train['is_attributed'].iloc[trn_idx].values
             X_valid_n = train[predictors].iloc[val_idx].values
             Y_valid_n = train['is_attributed'].iloc[val_idx].values
             dtrain = lgb.Dataset(X_train_n, label=Y_train_n,
@@ -1103,11 +1112,11 @@ def app_tune_xgb(train, feature_type):
     return
 
 
-def app_train(train, test, model_type,feature_type, data_type):
+def app_train(train, test, model_type,feature_type, data_type,use_pse, pseudo):
 
     with timer("goto train..."):
         if model_type == 'lgb':
-            pred = m_lgb_model(train, test, model_type, feature_type, data_type)
+            pred = m_lgb_model(train, test, model_type, feature_type, data_type,use_pse, pseudo)
         elif model_type == 'xgb':
             pred = m_xgb_model(train, test, model_type, feature_type, data_type)
     return pred
@@ -1307,7 +1316,7 @@ if __name__ == '__main__':
     print (test.info())
     if model_type == 'xgb' or model_type == 'lgb':
         print ("goto train ", str(model_type) )
-        pred =  app_train(train, test, model_type,feature_type, data_set)
+        pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
     elif model_type == 'nn':
         pred = app_train_nn(train, test, model_type, feature_type, data_set)
 
