@@ -73,6 +73,9 @@ warnings.filterwarnings('ignore')
 os.environ["OMP_NUM_THREADS"] = "4"
 os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 
+most_freq_hours_in_test_data = [4, 5, 9, 10, 13, 14]
+least_freq_hours_in_test_data = [6, 11, 15]
+
 log_file = open('XGB-run-01-v1-full.log', 'a')
 
 """"""""""""""""""""""""""""""
@@ -205,7 +208,6 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
         # print('The initial size of the train set is', len_train)
         train=train.append(test)
 
-
     with timer('Orgnizing Target Data...'):
         target = 'is_attributed'
         train.loc[train[target].isnull(),target] = 99
@@ -214,16 +216,64 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
         del test
         gc.collect()
 
-
     with timer("Creating new time features: 'hour' and 'day'..."):
         train['hour'] = pd.to_datetime(train.click_time).dt.hour.astype('uint8')
         train['day'] = pd.to_datetime(train.click_time).dt.day.astype('uint8')
-
         train.drop( 'click_time', axis=1, inplace=True )
         gc.collect()
 
         # train['click_hour'] = pd.to_datetime(train.attributed_time).dt.hour.astype('uint8')
         # train['click_day'] = pd.to_datetime(train.attributed_time).dt.day.astype('uint8')
+
+    if feature_type == 'pranav':
+        train['in_test_hh'] = (   3
+                         - 2*train['hour'].isin(  most_freq_hours_in_test_data )
+                         - 1*train['hour'].isin( least_freq_hours_in_test_data ) ).astype('uint8')
+
+        gp = train[['ip', 'day', 'in_test_hh', 'channel']].groupby(by=['ip', 'day',
+                 'in_test_hh'])[['channel']].count().reset_index().rename(index=str,
+                 columns={'channel': 'nip_day_test_hh'})
+        train = train.merge(gp, on=['ip','day','in_test_hh'], how='left')
+        del gp
+        train.drop(['in_test_hh'], axis=1, inplace=True)
+        print( "nip_day_test_hh max value = ", train.nip_day_test_hh.max() )
+        train['nip_day_test_hh'] = train['nip_day_test_hh'].astype('uint32')
+        gc.collect()
+
+        gp = train[['ip', 'day', 'hour', 'channel']].groupby(by=['ip', 'day',
+                 'hour'])[['channel']].count().reset_index().rename(index=str,
+                 columns={'channel': 'nip_day_hh'})
+        train = train.merge(gp, on=['ip','day','hour'], how='left')
+        del gp
+        train['nip_day_hh'] = train['nip_day_hh'].astype('uint16')
+        gc.collect()
+
+        gp = train[['ip', 'day', 'os', 'hour', 'channel']].groupby(by=['ip', 'os', 'day',
+                 'hour'])[['channel']].count().reset_index().rename(index=str,
+                 columns={'channel': 'nip_hh_os'})
+        train = train.merge(gp, on=['ip','os','hour','day'], how='left')
+        del gp
+        print( "nip_hh_os max value = ", train.nip_hh_os.max() )
+        train['nip_hh_os'] = train['nip_hh_os'].astype('uint16')
+        gc.collect()
+
+        gp = train[['ip', 'app', 'hour', 'day', 'channel']].groupby(by=['ip', 'app', 'day',
+                 'hour'])[['channel']].count().reset_index().rename(index=str,
+                 columns={'channel': 'nip_hh_app'})
+        train = train.merge(gp, on=['ip','app','hour','day'], how='left')
+        del gp
+        print( "nip_hh_app max value = ", train.nip_hh_app.max() )
+        train['nip_hh_app'] = train['nip_hh_app'].astype('uint16')
+        gc.collect()
+
+        gp = train[['ip', 'device', 'hour', 'day', 'channel']].groupby(by=['ip', 'device', 'day',
+                 'hour'])[['channel']].count().reset_index().rename(index=str,
+                 columns={'channel': 'nip_hh_dev'})
+        train = train.merge(gp, on=['ip','device','day','hour'], how='left')
+        del gp
+        print( "nip_hh_dev max value = ", train.nip_hh_dev.max() )
+        train['nip_hh_dev'] = train['nip_hh_dev'].astype('uint32')
+        gc.collect()
 
     with timer('Computing the number of channels associated with ip day hour... '):
         n_chans = train[['ip','day','hour','channel']].groupby(by=['ip','day',
@@ -374,15 +424,18 @@ def m_old_lgb_model(csr_trn, csr_sub, train, test, feature_type):
 def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo):
 
     predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    categorical = ['app', 'device', 'os', 'channel', 'hour']
     if feature_type == 'andy_org':
         predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     elif feature_type == 'andy_doufu':
         predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
-    categorical = ['app', 'device', 'os', 'channel', 'hour']
+    elif feature_type == 'pranav':
+        predictors = ['app','device','os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count',
+              'nip_day_test_hh', 'nip_day_hh', 'nip_hh_os', 'nip_hh_app', 'nip_hh_dev']
 
     target = ['is_attributed']
 
-    params = {
+    params = { # andy org
         'boosting_type': 'gbdt',
         'objective': 'binary',
         'metric': 'auc',
@@ -406,6 +459,29 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
         }
+    params = { ## get from andy_pranva
+        'boosting_type': 'gbdt',
+        'objective': 'binary',
+        'metric':'auc',
+        'learning_rate': 0.1,
+        'num_leaves': 7,  # we should let it be smaller than 2^(max_depth)
+        'max_depth': 4,  # -1 means no limit
+        'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
+        'max_bin': 100,  # Number of bucketed bin for feature values
+        'subsample': 0.7,  # Subsample ratio of the training instance.
+        'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
+        'colsample_bytree': 0.7,  # Subsample ratio of columns when constructing each tree.
+        'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
+        'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
+        'nthread': 4,
+        'verbose': 0,
+        'scale_pos_weight':99.7, # because training data is extremely unbalanced
+        "device": "gpu",
+        "gpu_platform_id": 0,
+        "gpu_device_id": 0,
+    }
+
+
     one_fold = True
     splits = 3
     if one_fold == True:
@@ -1313,8 +1389,8 @@ if __name__ == '__main__':
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
     model_type = 'lgb' # xgb lgb nn
-    feature_type = 'andy_org' # andy_org andy_doufu
-    use_pse = True
+    feature_type = 'pranav' # andy_org andy_doufu 'pranav'
+    use_pse = False
 
     # h_get_pseudo_data()
     ##################################
