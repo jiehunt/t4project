@@ -482,7 +482,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
     }
 
 
-    one_fold = True
+    one_fold = False
     splits = 3
     if one_fold == True:
         splits = 1
@@ -597,10 +597,10 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
             gc.collect()
 
 
-        class_pred = pd.DataFrame(class_pred)
-        oof_names = ['is_attributed_oof']
-        class_pred.columns = oof_names
-        print("Full roc auc scores : %.6f" % roc_auc_score(train['is_attributed'], class_pred[oof_names]))
+        # class_pred = pd.DataFrame(class_pred)
+        # oof_names = ['is_attributed_oof']
+        # class_pred.columns = oof_names
+        # print("Full roc auc scores : %.6f" % roc_auc_score(train['is_attributed'], class_pred[oof_names]))
 
         # Save OOF predictions - may be interesting for stacking...
         # file_name = 'oof/'+str(model_type) + '_' + str(feature_type) +'_' + str(data_type) + '_oof.csv'
@@ -1390,7 +1390,7 @@ if __name__ == '__main__':
     data_set = 'set20'
     model_type = 'lgb' # xgb lgb nn
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
-    use_pse = False
+    use_pse = True
 
     # h_get_pseudo_data()
     ##################################
