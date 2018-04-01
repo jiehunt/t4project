@@ -270,7 +270,7 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
         pseudo = pseudo['is_attributed']
         print ("pseudo file size is ", len(pseudo))
         print ("test file size is ", len(test))
-        new_test = test.resset_index(drop=True)
+        new_test = test.reset_index(drop=True)
         pseudo = pd.concat ([new_test, pseudo], axis=1)
         print ("test's head is ")
         print (test.head())
