@@ -199,9 +199,6 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
         test = pd.read_csv(path_test, dtype=dtypes, header=0, usecols=test_cols)
         len_test = len(test)
 
-    if use_pse == True:
-        path_pseudo = './pseudo/pseudo.csv'
-        pseudo = pd.read_csv(path_pseudo, dtype=dtypes, header=0, usecols=['is_attributed'])
 
     with timer('Binding the training and test set together...'):
         len_train = len(train)
@@ -268,9 +265,20 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
     train = train[:len_train]
 
     if use_pse == True:
-        pseudo = pd.concat ([test, pseudo], axis=1)
-        print (pseudo.info())
+        path_pseudo = './pseudo/pseudo.csv'
+        pseudo = pd.read_csv(path_pseudo, dtype=dtypes, header=0, usecols=['is_attributed'])
+        pseudo = pseudo['is_attributed']
+        print ("pseudo file size is ", len(pseudo))
+        print ("test file size is ", len(test))
+        new_test = test.resset_index(drop=True)
+        pseudo = pd.concat ([new_test, pseudo], axis=1)
+        print ("test's head is ")
+        print (test.head())
+        print ("pseudo's head is ")
         print (pseudo.head())
+        print ("pseudo file size is ", len(pseudo))
+        print ("test file size is ", len(test))
+        print (pseudo.info())
     else:
         pseudo = None
 
@@ -374,6 +382,7 @@ def m_old_lgb_model(csr_trn, csr_sub, train, test, feature_type):
 
 def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo):
 
+    predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     if feature_type == 'andy_org':
         predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     elif feature_type == 'andy_doufu':
@@ -418,7 +427,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         print('The size of the validation set is ', len(val))
 
         new_list = list(set(range(len_train-1))- set(row_list))
-        train = train.iloc[new_list].values
+        train = train.iloc[new_list]
         print('The size of the train set is ', len(train))
 
         if use_pse == True:
