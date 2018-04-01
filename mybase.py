@@ -406,7 +406,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
         }
-    one_fold = False
+    one_fold = True
     splits = 3
     if one_fold == True:
         splits = 1
@@ -414,11 +414,11 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         r = 0.1 # the fraction of the train data to be used for validation
         row_list = random.sample(range(len_train-1), round(len_train*r))
         # val = train[(len_train-round(r*len_train)):len_train]
-        val = train[row_list]
+        val = train.iloc[row_list].values
         print('The size of the validation set is ', len(val))
 
         new_list = list(set(range(len_train-1))- set(row_list))
-        train = train[new_list]
+        train = train.ioc[new_list].values
         print('The size of the train set is ', len(train))
 
         if use_pse == True:
