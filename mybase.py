@@ -463,7 +463,8 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         'boosting_type': 'gbdt',
         'objective': 'binary',
         'metric':'auc',
-        'learning_rate': 0.1,
+        # 'learning_rate': 0.3,
+        'learning_rate': 0.2,
         'num_leaves': 7,  # we should let it be smaller than 2^(max_depth)
         'max_depth': 4,  # -1 means no limit
         'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
@@ -482,7 +483,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
     }
 
 
-    one_fold = False
+    one_fold = True
     splits = 3
     if one_fold == True:
         splits = 1
@@ -530,7 +531,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
                          valid_sets=[dtrain, dvalid],
                          valid_names=['train','valid'],
                          evals_result=evals_results,
-                         num_boost_round=1000,
+                         num_boost_round=5000,
                          early_stopping_rounds=50,
                          # num_boost_round=5,
                          # early_stopping_rounds=1,
