@@ -158,8 +158,8 @@ def h_get_pseudo_data(path_sub):
 
 if __name__ == '__main__':
     # h_get_train()
-    # h_get_zero()
-    with timer('goto prepare pseudo file ... '):
-        path_sub = 'output/set20lgbandy_org.csv'
-        h_get_pseudo_data(path_sub)
+    h_get_zero()
+    # with timer('goto prepare pseudo file ... '):
+    #     path_sub = 'output/set20lgbandy_org.csv'
+    #     h_get_pseudo_data(path_sub)
 

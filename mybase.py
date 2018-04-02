@@ -764,7 +764,8 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     emb_n = 50
     dense_n = 1000
-    batch_size = 20000
+    batch_size = 50000
+    # batch_size = 20000
     epochs = 2
     lr_init, lr_fin = 0.001, 0.0001
     dr = 0.2
@@ -782,13 +783,30 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
         emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
 
     fe = concatenate(emb_list)
+
+    ############################
+    # Old version
+    ############################
+    # s_dout = SpatialDropout1D(0.2)(fe)
+    # fl = Flatten()(s_dout)
+    # x = Dropout(dr)(Dense(dense_n,activation='relu')(fl))
+    # x = Dropout(dr)(Dense(dense_n,activation='relu')(x))
+    # gl = MaxPooling1D(pool_size=1, strides=1)(s_dout)
+    # fl = Flatten()(gl)
+    # x = concatenate([(x), (fl)])
+    # outp = Dense(1,activation='sigmoid')(x)
+    # model = Model(inputs=input_list, outputs=outp)
+
+    ############################
+    # New version 20180402
+    ############################
     s_dout = SpatialDropout1D(0.2)(fe)
-    fl = Flatten()(s_dout)
-    x = Dropout(dr)(Dense(dense_n,activation='relu')(fl))
+    fl1 = Flatten()(s_dout)
+    conv = Conv1D(100, kernel_size=4, strides=1, padding='same')(s_dout)
+    fl2 = Flatten()(conv)
+    concat = concatenate([(fl1), (fl2)])
+    x = Dropout(dr)(Dense(dense_n,activation='relu')(concat))
     x = Dropout(dr)(Dense(dense_n,activation='relu')(x))
-    gl = MaxPooling1D(pool_size=1, strides=1)(s_dout)
-    fl = Flatten()(gl)
-    x = concatenate([(x), (fl)])
     outp = Dense(1,activation='sigmoid')(x)
     model = Model(inputs=input_list, outputs=outp)
 
@@ -807,7 +825,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
     class_weight = {0:.01,1:.99} # magic
-    model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, class_weight='auto',
+    model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, class_weight=class_weight,
         shuffle=True, verbose=1, validation_data = (x_valid, y_valid),
         callbacks = [ra_val, check_point, early_stop])
 
@@ -1282,7 +1300,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
     with timer("Goto Train NN Model"):
         # folds = StratifiedKFold(n_splits=splits, shuffle=True, random_state=1)
         with timer("Goto StratifiedShuffleSplit ..."):
-            folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.005, random_state = 182)
+            folds = StratifiedShuffleSplit(n_splits = splits, test_size = 0.01, random_state = 182)
 
         for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[feature_names], train[target])):
 
@@ -1380,7 +1398,7 @@ def h_tuning_bayesian():
     return
 
 def my_simple_blend():
-    path_0 ='./output/set001lgbandy_org.csv'
+    path_0 ='./output/set20lgbpranav977671.csv'
     path_1 ='./output/set01nnandy_org.csv'
     path_2 ='./fun/set20lgbandy_org.csv'
 
@@ -1388,7 +1406,7 @@ def my_simple_blend():
     file1 = pd.read_csv(path_1)
     file2 = pd.read_csv(path_2)
     pred = (file0['is_attributed'] + file1['is_attributed']+ file2['is_attributed']) /3
-    outfile = 'output/blend_set01nn_set001lgb_set20lgb_'+ str(feature_type) + '.csv'
+    outfile = 'output/blend_set01nn_set001lgb_set20lgb9694_'+ str(feature_type) + '.csv'
     g_make_single_submission(outfile, pred)
 
 if __name__ == '__main__':
@@ -1397,7 +1415,7 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'lgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
     use_pse = False
 
