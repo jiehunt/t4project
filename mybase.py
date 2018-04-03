@@ -76,7 +76,9 @@ os.environ['CUDA_VISIBLE_DEVICES'] = "0"
 most_freq_hours_in_test_data = [4, 5, 9, 10, 13, 14]
 least_freq_hours_in_test_data = [6, 11, 15]
 
-log_file = open('XGB-run-01-v1-full.log', 'a')
+# t0 = datetime.datetime.now()
+log_name = "aaa" + '.log'
+log_file = open(log_name, 'a')
 
 """"""""""""""""""""""""""""""
 # Help Function
@@ -1354,6 +1356,14 @@ def g_make_single_submission(outfile, pred):
     submit['is_attributed'] = pred
     submit.to_csv(outfile,float_format='%.3f', index=False)
 
+def g_make_ooffile(outfile, pred):
+
+    train_cols = ['is_attributed']
+    oof = pd.read_csv('./input/train.csv', dtype='uint8', usecols=train_cols)
+    oof['is_attributed_oof'] = pred
+    oof.to_csv(outfile,float_format='%.3f', index=False)
+
+
 def g_make_pseudo_submission(outfile, m_pred):
 
     dtypes = {
@@ -1370,12 +1380,6 @@ def g_make_pseudo_submission(outfile, m_pred):
     submit['is_attributed'] = pred
     submit.to_csv(outfile,float_format='%.3f', index=False)
 
-
-""""""""""""""""""""""""""""""
-# Main Func
-""""""""""""""""""""""""""""""
-AUCbest = -1.
-ITERbest = 0
 
 def h_tuning_bayesian():
     ##################################
@@ -1409,33 +1413,58 @@ def my_simple_blend():
     outfile = 'output/blend_set01nn_set001lgb_set20lgb9694_'+ str(feature_type) + '.csv'
     g_make_single_submission(outfile, pred)
 
+def h_get_oof_file(data_type, model_type, feature_type, use_pse):
+
+    train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
+
+
+    if use_pse == True:
+        file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+    else :
+        file_path = './model/'+'pse_'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+
+    model = lgb.Booster(model_file=file_path)
+
+    pred = model.predict(test[predictors], num_iteration=model.best_iteration)
+
+    outfile = 'oof/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    g_make_ooffile(outfile, pred)
+    return
+""""""""""""""""""""""""""""""
+# Main Func
+""""""""""""""""""""""""""""""
+AUCbest = -1.
+ITERbest = 0
+
 if __name__ == '__main__':
     # from andy :set0 set1 setfull
     # sample all 1 and random 0 :set01
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
     use_pse = False
 
+    with timer("genarete oof file ..."):
+        h_get_oof_file(data_set, model_type, feature_type, use_pse)
     # my_simple_blend()
     # h_get_pseudo_data()
     ##################################
     # traing for nn
     ##################################
-    train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
-    print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
-    print (train.info())
-    print (test.info())
-    if model_type == 'xgb' or model_type == 'lgb':
-        print ("goto train ", str(model_type) )
-        pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
-    elif model_type == 'nn':
-        pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    # train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
+    # print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
+    # print (train.info())
+    # print (test.info())
+    # if model_type == 'xgb' or model_type == 'lgb':
+    #     print ("goto train ", str(model_type) )
+    #     pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
+    # elif model_type == 'nn':
+    #     pred = app_train_nn(train, test, model_type, feature_type, data_set)
 
-    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    g_make_single_submission(outfile, pred)
+    # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    # g_make_single_submission(outfile, pred)
     ##################################
 
 
