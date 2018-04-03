@@ -1413,19 +1413,30 @@ def my_simple_blend():
     outfile = 'output/blend_set01nn_set001lgb_set20lgb9694_'+ str(feature_type) + '.csv'
     g_make_single_submission(outfile, pred)
 
-def h_get_oof_file(data_type, model_type, feature_type, use_pse):
+def h_get_oof_file(trian, data_type, model_type, feature_type, use_pse):
 
     train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
 
+    predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    categorical = ['app', 'device', 'os', 'channel', 'hour']
+    if feature_type == 'andy_org':
+        predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
+    elif feature_type == 'andy_doufu':
+        predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count', 'app_channel_count']
+    elif feature_type == 'pranav':
+        predictors = ['app','device','os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count',
+              'nip_day_test_hh', 'nip_day_hh', 'nip_hh_os', 'nip_hh_app', 'nip_hh_dev']
 
-    if use_pse == True:
-        file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
-    else :
-        file_path = './model/'+'pse_'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+    if model_type == 'lgb':
+        if use_pse == True:
+            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+        else :
+            file_path = './model/'+'pse_'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
 
-    model = lgb.Booster(model_file=file_path)
+        model = lgb.Booster(model_file=file_path)
 
-    pred = model.predict(test[predictors], num_iteration=model.best_iteration)
+        pred = model.predict(train[predictors], num_iteration=model.best_iteration)
+    # elif model_type =
 
     outfile = 'oof/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
     g_make_ooffile(outfile, pred)
@@ -1447,7 +1458,7 @@ if __name__ == '__main__':
     use_pse = False
 
     with timer("genarete oof file ..."):
-        h_get_oof_file(data_set, model_type, feature_type, use_pse)
+        h_get_oof_file(trian, data_set, model_type, feature_type, use_pse)
     # my_simple_blend()
     # h_get_pseudo_data()
     ##################################
