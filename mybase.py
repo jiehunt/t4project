@@ -1446,10 +1446,10 @@ def h_get_oof_file(data_type, model_type, feature_type, use_pse):
             file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
 
         with timer("h_get_keras_data for train"):
-            x_train = h_get_keras_data(train, feature_type)
+            x_train = h_get_keras_data(train[predictors], feature_type)
 
         model = load_model(file_path)
-        pred = model.predict(x_train[predictors])
+        pred = model.predict(x_train)
 
     outfile = 'oof/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
     g_make_ooffile(outfile, pred)
