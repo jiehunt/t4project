@@ -1316,7 +1316,10 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
             print ("type(Y_train_n) is", type(Y_train_n))
 
             if model_type == 'nn': # nn
-                file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+                if use_pse == True:
+                    file_path = './model/'+'pse_'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+                else :
+                    file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
                 # if os.path.exists(file_path):
                 #     model = load_model(file_path)
                 # else:
@@ -1413,7 +1416,7 @@ def my_simple_blend():
     outfile = 'output/blend_set01nn_set001lgb_set20lgb9694_'+ str(feature_type) + '.csv'
     g_make_single_submission(outfile, pred)
 
-def h_get_oof_file(trian, data_type, model_type, feature_type, use_pse):
+def h_get_oof_file(data_type, model_type, feature_type, use_pse):
 
     train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
 
@@ -1436,7 +1439,17 @@ def h_get_oof_file(trian, data_type, model_type, feature_type, use_pse):
         model = lgb.Booster(model_file=file_path)
 
         pred = model.predict(train[predictors], num_iteration=model.best_iteration)
-    # elif model_type =
+    elif model_type == 'nn':
+        if use_pse == True:
+            file_path = './model/'+'pse_'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+        else :
+            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+
+        with timer("h_get_keras_data for train"):
+            x_train = h_get_keras_data(train, feature_type)
+
+        model = load_model(file_path)
+        pred = model.predict(x_train[predictors])
 
     outfile = 'oof/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
     g_make_ooffile(outfile, pred)
@@ -1453,12 +1466,12 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'lgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
     use_pse = False
 
     with timer("genarete oof file ..."):
-        h_get_oof_file(trian, data_set, model_type, feature_type, use_pse)
+        h_get_oof_file(data_set, model_type, feature_type, use_pse)
     # my_simple_blend()
     # h_get_pseudo_data()
     ##################################
