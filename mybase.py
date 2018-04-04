@@ -1503,6 +1503,132 @@ def h_get_oof_file(data_type, model_type, feature_type, use_pse):
     outfile = 'oof/' + str(data_set) + str(model_type) + str(feature_type) + '_oof.csv'
     g_make_ooffile(outfile, pred,data_set)
     return
+
+def s_stack():
+    file_name = 'oof/set20lgbpranav_oof.csv'
+    filei0 = pd.read_csv(file_name)
+
+    file_name = 'oof/set20nnpranav_oof.csv'
+    filei1 = pd.read_csv(file_name)
+
+    target = ['is_attributed']
+    target_oof = ['is_attributed_oof']
+
+    train_target = filei0[target]
+
+    filei0 = filei0[target_oof]
+    filei0.columns = ['is_attributed_oof_0']
+
+    filei1 = filei1[target_oof]
+    filei1.columns = ['is_attributed_oof_1']
+
+    file_name = 'output/set20lgbpranav977671_lb9694.csv'
+    fileo0 = pd.read_csv(file_name)
+
+    file_name = 'output/set20nnpranav_lb9671.csv'
+    fileo1 = pd.read_csv(file_name)
+
+    fileo0 = fileo0[target]
+    fileo0.columns = ['is_attributed_oof_0']
+
+    fileo1 = fileo1[target]
+    fileo1.columns = ['is_attributed_oof_1']
+
+    train = pd.concat ([filei0, filei1], axis = 1)
+    test = pd.concat ([fileo0, fileo1], axis = 1)
+    print (train.describe())
+    print (test.describe())
+    print (train_target.describe())
+    model = LogisticRegression()
+    model.fit(train, train_target)
+
+    pred = model.predict_proba(test)[:,1]
+
+    outfile = 'output/' + 'stack_' + '.csv'
+    g_make_single_submission(outfile, pred)
+
+    return
+
+
+def app_stack_2():
+    class_names = ['is_attributed']
+    class_names_oof = []
+    for c in class_names:
+        class_names_oof.append(c+'_oof')
+
+    file_name = 'oof/set20lgbpranav_oof.csv'
+    filei0 = pd.read_csv(file_name)
+
+    file_name = 'oof/set20nnpranav_oof.csv'
+    filei1 = pd.read_csv(file_name)
+
+    target = ['is_attributed']
+    target_oof = ['is_attributed_oof']
+
+    train_target = filei0[target]
+
+    filei0 = filei0[target_oof]
+    filei0.columns = ['is_attributed_oof_0']
+
+    filei1 = filei1[target_oof]
+    filei1.columns = ['is_attributed_oof_1']
+
+    file_name = 'output/set20lgbpranav977671_lb9694.csv'
+    fileo0 = pd.read_csv(file_name)
+
+    file_name = 'output/set20nnpranav_lb9671.csv'
+    fileo1 = pd.read_csv(file_name)
+
+    fileo0 = fileo0[target]
+    fileo0.columns = ['is_attributed_oof_0']
+
+    fileo1 = fileo1[target]
+    fileo1.columns = ['is_attributed_oof_1']
+
+    train = pd.concat ([filei0, filei1], axis = 1)
+    test = pd.concat ([fileo0, fileo1], axis = 1)
+
+    # train_list, test_list =  h_get_train_test_list()
+    # num_file = len(train_list)
+
+    # train = h_prepare_data_train(train_list)
+    # test = h_prepare_data_test(test_list)
+
+    # stacker = LogisticRegression()
+    # stacker = lgb.LGBMClassifier(max_depth=4, metric="auc", n_estimators=125, num_leaves=9, boosting_type="gbdt",
+    #                              learning_rate=0.1,  colsample_bytree=0.41,reg_lambda=0.9,
+    #                         device = 'gpu',
+    #                         gpu_platform_id=0,
+    #                         gpu_device_id = 0,)
+
+    stacker = lgb.LGBMClassifier(metric="auc",boosting_type="gbdt",
+                                 learning_rate=0.1,
+                            device = 'gpu',
+                            gpu_platform_id=0,
+                            gpu_device_id = 0,)
+
+    train_r = train
+
+    X_train, X_valid, Y_train, Y_valid = train_test_split(train_r, train_target, test_size = 0.1, random_state=1982)
+    # Fit and submit
+    # X_train = train_r
+    # Y_train = train_target
+    scores = []
+    for label in class_names:
+        print(label)
+        score = cross_val_score(stacker, X_train, Y_train[label], cv=3, scoring='roc_auc',verbose=0)
+        print("AUC:", score)
+        scores.append(np.mean(score))
+        stacker.fit(X_train, Y_train[label])
+        pred = stacker.predict_proba(test)[:,1]
+        trn_pred = stacker.predict_proba(X_valid)[:,1]
+        print ("%s score : %f" % (str(label),  roc_auc_score(Y_valid[label], trn_pred)))
+    print("CV score:", np.mean(scores))
+
+    out_file = 'output/submission_stack' + '2file.csv'
+    g_make_single_submission(outfile, pred)
+    return
+
 """"""""""""""""""""""""""""""
 # Main Func
 """"""""""""""""""""""""""""""
@@ -1519,8 +1645,9 @@ if __name__ == '__main__':
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
     use_pse = False
 
-    with timer("genarete oof file ..."):
-        h_get_oof_file(data_set, model_type, feature_type, use_pse)
+    app_stack_2()
+    # with timer("genarete oof file ..."):
+    #     h_get_oof_file(data_set, model_type, feature_type, use_pse)
     # my_simple_blend()
     # h_get_pseudo_data()
     ##################################
