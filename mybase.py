@@ -1454,15 +1454,17 @@ def h_tuning_bayesian():
     return
 
 def my_simple_blend():
-    path_0 ='./output/set20lgbpranav977671.csv'
-    path_1 ='./output/set01nnandy_org.csv'
-    path_2 ='./fun/set20lgbandy_org.csv'
+    path_0 ='./output/set20lgbpranav977671_lb9694.csv'
+    path_1 ='./output/set20nnpranav_lb9671.csv'
+    path_2 ='./output/wordbatch_fm_ftrl.csv'
+    path_3 ='./output/set20lgb3foldpranav_lb9693.csv'
 
     file0 = pd.read_csv(path_0)
     file1 = pd.read_csv(path_1)
     file2 = pd.read_csv(path_2)
-    pred = (file0['is_attributed'] + file1['is_attributed']+ file2['is_attributed']) /3
-    outfile = 'output/blend_set01nn_set001lgb_set20lgb9694_'+ str(feature_type) + '.csv'
+    file3 = pd.read_csv(path_3)
+    pred = (file0['is_attributed']*31 + file1['is_attributed']*15+ file2['is_attributed']*23+ file3['is_attributed']*31) /100
+    outfile = 'output/blend_set20nn_set20lgb_ftrl_3fold_weights'+ '.csv'
     g_make_single_submission(outfile, pred)
 
 def h_get_oof_file(data_type, model_type, feature_type, use_pse):
@@ -1625,7 +1627,7 @@ def app_stack_2():
         print ("%s score : %f" % (str(label),  roc_auc_score(Y_valid[label], trn_pred)))
     print("CV score:", np.mean(scores))
 
-    out_file = 'output/submission_stack' + '2file.csv'
+    outfile = 'output/submission_stack' + '2file.csv'
     g_make_single_submission(outfile, pred)
     return
 
@@ -1645,10 +1647,10 @@ if __name__ == '__main__':
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
     use_pse = False
 
-    app_stack_2()
+    # app_stack_2()
     # with timer("genarete oof file ..."):
     #     h_get_oof_file(data_set, model_type, feature_type, use_pse)
-    # my_simple_blend()
+    my_simple_blend()
     # h_get_pseudo_data()
     ##################################
     # traing for nn
