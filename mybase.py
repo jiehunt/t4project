@@ -1642,8 +1642,8 @@ if __name__ == '__main__':
     # sample all 1 and random 0 :set01
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
-    data_set = 'set20'
-    model_type = 'lgb' # xgb lgb nn
+    data_set = 'setfull'
+    model_type = 'nn' # xgb lgb nn
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
     use_pse = False
 
@@ -1655,18 +1655,18 @@ if __name__ == '__main__':
     ##################################
     # traing for nn
     ##################################
-    # train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
-    # print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
-    # print (train.info())
-    # print (test.info())
-    # if model_type == 'xgb' or model_type == 'lgb':
-    #     print ("goto train ", str(model_type) )
-    #     pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
-    # elif model_type == 'nn':
-    #     pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
+    print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
+    print (train.info())
+    print (test.info())
+    if model_type == 'xgb' or model_type == 'lgb':
+        print ("goto train ", str(model_type) )
+        pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
+    elif model_type == 'nn':
+        pred = app_train_nn(train, test, model_type, feature_type, data_set)
 
-    # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    # g_make_single_submission(outfile, pred)
+    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    g_make_single_submission(outfile, pred)
     ##################################
 
 
