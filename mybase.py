@@ -1500,7 +1500,7 @@ def h_get_oof_file(data_type, model_type, feature_type, use_pse):
         model = load_model(file_path)
         pred = model.predict(x_train)
 
-    outfile = 'oof/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    outfile = 'oof/' + str(data_set) + str(model_type) + str(feature_type) + '_oof.csv'
     g_make_ooffile(outfile, pred,data_set)
     return
 """"""""""""""""""""""""""""""
@@ -1515,7 +1515,7 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
     use_pse = False
 
