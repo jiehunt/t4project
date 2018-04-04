@@ -1359,12 +1359,60 @@ def g_make_single_submission(outfile, pred):
     submit['is_attributed'] = pred
     submit.to_csv(outfile,float_format='%.3f', index=False)
 
-def g_make_ooffile(outfile, pred):
+def g_make_ooffile(outfile, pred, data_set):
 
+    path_train ='./input/train.csv'
+    path_test = './input/test.csv'
     train_cols = ['is_attributed']
-    oof = pd.read_csv('./input/train.csv', dtype='uint8', usecols=train_cols)
-    oof['is_attributed_oof'] = pred
-    oof.to_csv(outfile,float_format='%.3f', index=False)
+
+    SKIP_ROWS = 100000000
+    skip = range(1, SKIP_ROWS)
+
+    dtypes = {
+            'is_attributed' : 'uint8',
+            }
+
+    if data_set == 'set1':
+        train = pd.read_csv(path_train, skiprows=skip, dtype=dtypes, header=0, usecols=train_cols)
+    elif data_set == 'set0':
+        train = pd.read_csv(path_train, nrows=SKIP_ROWS, dtype=dtypes, header=0, usecols=train_cols)
+    elif data_set == 'setfull':
+        train = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+    elif data_set == 'set01':
+        path_train ='./input/train_1.csv'
+        train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+        path_train ='./input/train_0.csv'
+        train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+        train = pd.concat([train_1, train_0])
+        del train_0, train_1
+        gc.collect()
+    elif data_set == 'set001':
+        path_train ='./input/train_1.csv'
+        train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+        path_train ='./input/train_00.csv'
+        train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+        train = pd.concat([train_1, train_0])
+        del train_0, train_1
+        gc.collect()
+    elif data_set == 'set20':
+        path_train ='./input/train_1.csv'
+        train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+        path_train ='./input/train_001.csv'
+        train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+        train = pd.concat([train_1, train_0])
+        del train_0, train_1
+        gc.collect()
+    elif data_set == 'set21':
+        path_train ='./input/train_1.csv'
+        train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+        path_train ='./input/train_002.csv'
+        train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+        train = pd.concat([train_1, train_0])
+        del train_0, train_1
+        gc.collect(
+
+    train['is_attributed_oof'] = pred
+    train.to_csv(outfile,float_format='%.3f', index=False)
 
 
 def g_make_pseudo_submission(outfile, m_pred):
@@ -1452,7 +1500,7 @@ def h_get_oof_file(data_type, model_type, feature_type, use_pse):
         pred = model.predict(x_train)
 
     outfile = 'oof/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    g_make_ooffile(outfile, pred)
+    g_make_ooffile(outfile, pred,data_set)
     return
 """"""""""""""""""""""""""""""
 # Main Func
