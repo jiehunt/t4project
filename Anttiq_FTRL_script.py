@@ -1,7 +1,7 @@
 import sys
 
-sys.path.insert(0, '../input/wordbatch-133/wordbatch/')
-sys.path.insert(0, '../input/randomstate/randomstate/')
+sys.path.insert(0, './input/wordbatch-133/wordbatch/')
+sys.path.insert(0, './input/randomstate/randomstate/')
 import wordbatch
 from wordbatch.extractors import WordHash
 from wordbatch.models import FM_FTRL
@@ -116,7 +116,7 @@ clf = FM_FTRL(alpha=0.05, beta=0.1, L1=0.0, L2=0.0, D=D, alpha_fm=0.02,
               )
 p = None
 rcount = 0
-for df_c in pd.read_csv('../input/talkingdata-adtracking-fraud-detection/train.csv', engine='c', chunksize=batchsize,
+for df_c in pd.read_csv('./input/train.csv', engine='c', chunksize=batchsize,
 #for df_c in pd.read_csv('../input/train.csv', engine='c', chunksize=batchsize,
                         sep=","):
     rcount += batchsize
@@ -136,7 +136,7 @@ p = None
 click_ids= []
 test_preds = []
 rcount = 0
-for df_c in pd.read_csv('../input/talkingdata-adtracking-fraud-detection/test.csv', engine='c', chunksize=batchsize,
+for df_c in pd.read_csv('./input/test.csv', engine='c', chunksize=batchsize,
 #for df_c in pd.read_csv('../input/test.csv', engine='c', chunksize=batchsize,
                         sep=","):
     rcount += batchsize
