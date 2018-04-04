@@ -1409,10 +1409,11 @@ def g_make_ooffile(outfile, pred, data_set):
         train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
         train = pd.concat([train_1, train_0])
         del train_0, train_1
-        gc.collect(
+        gc.collect()
 
     train['is_attributed_oof'] = pred
     train.to_csv(outfile,float_format='%.3f', index=False)
+    return
 
 
 def g_make_pseudo_submission(outfile, m_pred):
