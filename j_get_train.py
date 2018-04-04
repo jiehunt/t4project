@@ -156,9 +156,76 @@ def h_get_pseudo_data(path_sub):
 
     return
 
+def get_special_set(data_set):
+
+    path_train ='./input/train.csv'
+    path_test = './input/test.csv'
+    dtypes = {
+            'ip'            : 'uint32',
+            'app'           : 'uint16',
+            'device'        : 'uint16',
+            'os'            : 'uint16',
+            'channel'       : 'uint16',
+            'is_attributed' : 'uint8',
+            'click_id'      : 'uint32'
+            }
+
+    # train_cols = ['ip', 'app', 'device', 'os', 'channel', 'click_time','attributed_time', 'is_attributed']
+    # test_cols = ['ip', 'app', 'device', 'os', 'channel', 'click_time','attributed_time']
+    train_cols = ['ip', 'app', 'device', 'os', 'channel', 'click_time', 'is_attributed']
+    test_cols = ['ip', 'app', 'device', 'os', 'channel', 'click_time']
+
+    SKIP_ROWS = 100000000
+    skip = range(1, SKIP_ROWS)
+
+    with timer('Loading the training data...'):
+        if data_set == 'set1':
+            train = pd.read_csv(path_train, skiprows=skip, dtype=dtypes, header=0, usecols=train_cols)
+        elif data_set == 'set0':
+            train = pd.read_csv(path_train, nrows=SKIP_ROWS, dtype=dtypes, header=0, usecols=train_cols)
+        elif data_set == 'setfull':
+            train = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+        elif data_set == 'set01':
+            path_train ='./input/train_1.csv'
+            train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            path_train ='./input/train_0.csv'
+            train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            train = pd.concat([train_1, train_0])
+            del train_0, train_1
+            gc.collect()
+        elif data_set == 'set001':
+            path_train ='./input/train_1.csv'
+            train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            path_train ='./input/train_00.csv'
+            train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            train = pd.concat([train_1, train_0])
+            del train_0, train_1
+            gc.collect()
+        elif data_set == 'set20':
+            path_train ='./input/train_1.csv'
+            train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            path_train ='./input/train_001.csv'
+            train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            train = pd.concat([train_1, train_0])
+            del train_0, train_1
+            gc.collect()
+        elif data_set == 'set21':
+            path_train ='./input/train_1.csv'
+            train_1 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            path_train ='./input/train_002.csv'
+            train_0 = pd.read_csv(path_train, dtype=dtypes, header=0, usecols=train_cols)
+            train = pd.concat([train_1, train_0])
+            del train_0, train_1
+            gc.collect()
+    file_name = 'input/'+ str(data_set) + '.csv'
+    train.to_csv(file_name, index=False)
+
 if __name__ == '__main__':
+
+    data_set = 'set20'
+    get_special_set(data_set)
     # h_get_train()
-    h_get_zero()
+    # h_get_zero()
     # with timer('goto prepare pseudo file ... '):
     #     path_sub = 'output/set20lgbandy_org.csv'
     #     h_get_pseudo_data(path_sub)

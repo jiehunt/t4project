@@ -150,5 +150,29 @@ for df_c in pd.read_csv('./input/test.csv', engine='c', chunksize=batchsize,
     click_ids+= df_c['click_id'].tolist()
 if p != None:  test_preds += list(p.join())
 
+
 df_sub = pd.DataFrame({"click_id": click_ids, 'is_attributed': test_preds})
 df_sub.to_csv("wordbatch_fm_ftrl.csv", index=False)
+
+
+p = None
+labels= []
+test_preds = []
+rcount = 0
+for df_c in pd.read_csv('./input/set20.csv', engine='c', chunksize=batchsize,
+#for df_c in pd.read_csv('../input/test.csv', engine='c', chunksize=batchsize,
+                        sep=","):
+    rcount += batchsize
+    X, labels, weights = df2csr(wb, df_c)
+    if rcount % (10 * batchsize) == 0:
+        print(rcount)
+    if p != None:  test_preds += list(p.join())
+    p = ThreadWithReturnValue(target=predict_batch, args=(clf, X))
+    p.start()
+    labels+= df_c['is_attributed'].tolist()
+if p != None:  test_preds += list(p.join())
+
+
+sub = pd.DataFrame({"is_attributed": labels, 'is_attributed_oof': test_preds})
+sub.to_csv("wordbatch_fm_ftrl_oof.csv", index=False)
+
