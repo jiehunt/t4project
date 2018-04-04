@@ -22,7 +22,8 @@ start_time = time.time()
 
 mean_auc= 0
 
-def fit_batch(clf, X, y, w):  clf.partial_fit(X, y, sample_weight=w)
+# def fit_batch(clf, X, y, w):  clf.partial_fit(X, y, sample_weight=w)
+def fit_batch(clf, X, y, w):  clf.fit(X, y)
 
 def predict_batch(clf, X):  return clf.predict(X)
 
@@ -108,11 +109,11 @@ D = 2 ** 22
 wb = wordbatch.WordBatch(None, extractor=(WordHash, {"ngram_range": (1, 1), "analyzer": "word",
                                                      "lowercase": False, "n_features": D,
                                                      "norm": None, "binary": True})
-                         , minibatch_size=batchsize // 80, procs=8, freeze=True, verbose=0)
+                         , minibatch_size=batchsize // 80, procs=8,  verbose=0)
 clf = FM_FTRL(alpha=0.05, beta=0.1, L1=0.0, L2=0.0, D=D, alpha_fm=0.02,
               L2_fm=0.0, init_fm=0.01, weight_fm=1.0,
               D_fm=8, e_noise=0.0, iters=3,
-              inv_link="sigmoid", e_clip=1.0, threads=4, use_avx=1, verbose=0
+              inv_link="sigmoid",  threads=4,
               )
 p = None
 rcount = 0
