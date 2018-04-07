@@ -134,6 +134,62 @@ def h_get_keras_data(dataset, feature_type):
 
     return X
 
+def h_get_train_test_list():
+   oof_files= glob.glob("oof/*")
+   train_list = []
+   test_list = []
+
+   for f in oof_files:
+       train_list.append(f)
+       oof_path = str(f).split('/')[0]
+       oof_file = str(f).split('/')[1]
+       # oof_path = str(f).split('\\')[0]
+       # oof_file = str(f).split('\\')[1]
+       oof_test_pre = str(oof_file).split('oof')[0]
+       test_file = str(oof_path) + '_test/'+str(oof_test_pre) + 'oof_test.csv'
+       test_list.append(test_file)
+
+   return train_list, test_list
+
+def h_prepare_data_train(file_list):
+    class_names = ['is_attributed']
+    class_names_oof = []
+    for c in class_names:
+        class_names_oof.append(c+'_oof')
+
+    df = pd.read_csv('input/train.csv')
+    df = df[class_names]
+    for (n, f) in enumerate(file_list):
+        one_file = pd.read_csv(f)
+        one_file_n = one_file[class_names_oof]
+        n_class_name = []
+        for c in class_names_oof:
+            n_class_name.append(c+str(n))
+
+        one_file_n.columns = n_class_name
+        df = pd.concat([df, one_file_n], axis=1)
+
+    return df
+
+def h_prepare_data_test(file_list):
+    class_names = ['is_attributed']
+    class_names_oof = []
+    for c in class_names:
+        class_names_oof.append(c+'_oof')
+
+    df = pd.DataFrame()
+    for (n, f) in enumerate(file_list):
+        one_file = pd.read_csv(f)
+        one_file_n = one_file[class_names]
+        n_class_name = []
+        for c in class_names_oof:
+            n_class_name.append(c+str(n))
+        one_file_n.columns = n_class_name
+        df = pd.concat([df, one_file_n], axis=1)
+
+    return df
+
+
 """"""""""""""""""""""""""""""
 # Feature
 """"""""""""""""""""""""""""""
@@ -456,7 +512,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         'reg_lambda': 0,
         'nthread': 4,
         'verbose': 0,
-        'scale_pos_weight':99,
+        'scale_pos_weight':403,
         "device": "gpu",
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
@@ -478,7 +534,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
         'nthread': 4,
         'verbose': 0,
-        'scale_pos_weight':99.7, # because training data is extremely unbalanced
+        'scale_pos_weight':403, # because training data is extremely unbalanced
         "device": "gpu",
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
@@ -1454,17 +1510,21 @@ def h_tuning_bayesian():
     return
 
 def my_simple_blend():
-    path_0 ='./output/set20lgbpranav977671_lb9694.csv'
-    path_1 ='./output/set20nnpranav_lb9671.csv'
-    path_2 ='./output/wordbatch_fm_ftrl.csv'
-    path_3 ='./output/set20lgb3foldpranav_lb9693.csv'
+    # path_0 ='./output/set20lgbpranav977671_lb9694.csv'
+    # path_1 ='./output/set20nnpranav_lb9671.csv'
+    # path_2 ='./output/wordbatch_fm_ftrl.csv'
+    # path_3 ='./output/set20lgb3foldpranav_lb9693.csv'
 
+    path_0 ='./output/setfulllgbpranav_lb9699.csv'
+    path_1 ='./output/setfullnnpranav_lb9691.csv'
+    # path_2 ='./output/wordbatch_fm_ftrl.csv'
+    path_3 ='./output/set20lgb3foldpranav_lb9693.csv'
     file0 = pd.read_csv(path_0)
     file1 = pd.read_csv(path_1)
-    file2 = pd.read_csv(path_2)
+    # file2 = pd.read_csv(path_2)
     file3 = pd.read_csv(path_3)
-    pred = (file0['is_attributed']*31 + file1['is_attributed']*15+ file2['is_attributed']*23+ file3['is_attributed']*31) /100
-    outfile = 'output/blend_set20nn_set20lgb_ftrl_3fold_weights'+ '.csv'
+    pred = (file0['is_attributed'] + file1['is_attributed']+ file3['is_attributed']) /3
+    outfile = 'output/blend_setfulllgb_setfullnn_3fold_noweights'+ '.csv'
     g_make_single_submission(outfile, pred)
 
 def h_get_oof_file(data_type, model_type, feature_type, use_pse):
@@ -1558,37 +1618,13 @@ def app_stack_2():
     for c in class_names:
         class_names_oof.append(c+'_oof')
 
-    file_name = 'oof/set20lgbpranav_oof.csv'
-    filei0 = pd.read_csv(file_name)
+    train_list, test_list =  h_get_train_test_list()
+    num_file = len(train_list)
 
-    file_name = 'oof/set20nnpranav_oof.csv'
-    filei1 = pd.read_csv(file_name)
+    train = h_prepare_data_train(train_list)
+    test = h_prepare_data_test(test_list)
 
-    target = ['is_attributed']
-    target_oof = ['is_attributed_oof']
-
-    train_target = filei0[target]
-
-    filei0 = filei0[target_oof]
-    filei0.columns = ['is_attributed_oof_0']
-
-    filei1 = filei1[target_oof]
-    filei1.columns = ['is_attributed_oof_1']
-
-    file_name = 'output/set20lgbpranav977671_lb9694.csv'
-    fileo0 = pd.read_csv(file_name)
-
-    file_name = 'output/set20nnpranav_lb9671.csv'
-    fileo1 = pd.read_csv(file_name)
-
-    fileo0 = fileo0[target]
-    fileo0.columns = ['is_attributed_oof_0']
-
-    fileo1 = fileo1[target]
-    fileo1.columns = ['is_attributed_oof_1']
-
-    train = pd.concat ([filei0, filei1], axis = 1)
-    test = pd.concat ([fileo0, fileo1], axis = 1)
+    train_target = train[class_names]
 
     # train_list, test_list =  h_get_train_test_list()
     # num_file = len(train_list)
@@ -1605,6 +1641,7 @@ def app_stack_2():
 
     stacker = lgb.LGBMClassifier(metric="auc",boosting_type="gbdt",
                                  learning_rate=0.1,
+                            scale_pos_weight=403,
                             device = 'gpu',
                             gpu_platform_id=0,
                             gpu_device_id = 0,)
@@ -1627,7 +1664,7 @@ def app_stack_2():
         print ("%s score : %f" % (str(label),  roc_auc_score(Y_valid[label], trn_pred)))
     print("CV score:", np.mean(scores))
 
-    outfile = 'output/submission_stack' + '2file.csv'
+    outfile = 'output/submission_stack_' + str(num_file) + 'file.csv'
     g_make_single_submission(outfile, pred)
     return
 
@@ -1643,30 +1680,30 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'setfull'
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     feature_type = 'pranav' # andy_org andy_doufu 'pranav'
     use_pse = False
 
-    # app_stack_2()
+    app_stack_2()
     # with timer("genarete oof file ..."):
     #     h_get_oof_file(data_set, model_type, feature_type, use_pse)
-    my_simple_blend()
+    # my_simple_blend()
     # h_get_pseudo_data()
     ##################################
     # traing for nn
     ##################################
-    train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
-    print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
-    print (train.info())
-    print (test.info())
-    if model_type == 'xgb' or model_type == 'lgb':
-        print ("goto train ", str(model_type) )
-        pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
-    elif model_type == 'nn':
-        pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    # train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
+    # print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
+    # print (train.info())
+    # print (test.info())
+    # if model_type == 'xgb' or model_type == 'lgb':
+    #     print ("goto train ", str(model_type) )
+    #     pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
+    # elif model_type == 'nn':
+    #     pred = app_train_nn(train, test, model_type, feature_type, data_set)
 
-    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    g_make_single_submission(outfile, pred)
+    # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    # g_make_single_submission(outfile, pred)
     ##################################
 
 
