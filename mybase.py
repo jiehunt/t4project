@@ -194,6 +194,7 @@ def h_prepare_data_test(file_list):
 # Feature
 """"""""""""""""""""""""""""""
 # Aggregation function
+log_group = 100000 # 1000 views -> 60% confidence, 100 views -> 40% confidence
 def rate_calculation(x):
     """Calculate the attributed rate. Scale by confidence"""
     rate = x.sum() / float(x.count())
@@ -330,7 +331,6 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
 
         # Group sizes
         group_sizes = group_object.size()
-        log_group = 100000 # 1000 views -> 60% confidence, 100 views -> 40% confidence
         print(">> Calculating confidence-weighted rate for: {}.\n   Saving to: {}. Group Max /Mean / Median / Min: {} / {} / {} / {}".format(
             cols, new_feature,
             group_sizes.max(),
