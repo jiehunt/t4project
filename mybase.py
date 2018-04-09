@@ -429,7 +429,7 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
 
                 # Run calculation
                 print(f">> Grouping by {spec['groupby']}, and saving time to next click in: {new_feature}")
-                train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: x.diff().shift(-1)).dt.seconds
+                train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: int(x).diff().shift(-1)).dt.seconds
 
             train.drop( 'click_time', axis=1, inplace=True )
 
