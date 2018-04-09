@@ -1495,7 +1495,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
     elif feature_type == 'pranav':
         feature_names = ['app','device','os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count',
               'nip_day_test_hh', 'nip_day_hh', 'nip_hh_os', 'nip_hh_app', 'nip_hh_dev']
-    elif feature_names == 'nano'
+    elif feature_names == 'nano':
          cols = train.columns
          feature_names = list(set(cols) - set(target))
 
