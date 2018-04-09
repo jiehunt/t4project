@@ -437,7 +437,8 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
 
             # Run calculation
             print(f">> Grouping by {spec['groupby']}, and saving time to next click in: {new_feature}")
-            train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: x.diff().shift(-1)).dt.seconds
+            with thimer ("using ..."):
+                train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: x.diff().shift(-1)).dt.seconds
 
         train.drop( 'click_time', axis=1, inplace=True )
 
@@ -545,6 +546,13 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
         pseudo = pd.concat ([new_test, pseudo], axis=1)
     else:
         pseudo = None
+
+    save_file = True
+    if save_file == True:
+        file_path = 'input/' + str(data_set)+'_'+ str(feature_type) + '_train.csv'
+        train.to_csv(file_path, index=False)
+        file_path = 'input/' + str(data_set)+'_'+ str(feature_type) + '_test.csv'
+        test.to_csv(file_path, index=False)
 
     print('The size of the test set is ', len(test))
     print('The type of the test set is ', type(test))
