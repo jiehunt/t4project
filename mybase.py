@@ -119,7 +119,7 @@ class RocAucEvaluation(Callback):
             score = roc_auc_score(self.y_val, y_pred)
             print("\n ROC-AUC - epoch: {:d} - score: {:.6f}".format(epoch+1, score))
 
-def h_get_keras_data(dataset, feature_type):
+def h_get_keras_data(dataset):
     # if feature_type == 'andy_org':
     #     feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     # elif feature_type == 'andy_doufu':
@@ -287,7 +287,8 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
         train['day'] = pd.to_datetime(train.click_time).dt.day.astype('uint8')
         train['minute'] = pd.to_datetime(train.click_time).dt.minute.astype('uint8')
         train['second'] = pd.to_datetime(train.click_time).dt.second.astype('uint8')
-        train.drop( 'click_time', axis=1, inplace=True )
+        if feature_type != 'nano':
+            train.drop( 'click_time', axis=1, inplace=True )
         gc.collect()
 
         # train['click_hour'] = pd.to_datetime(train.attributed_time).dt.hour.astype('uint8')
@@ -430,6 +431,8 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
             print(f">> Grouping by {spec['groupby']}, and saving time to next click in: {new_feature}")
             train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: x.diff().shift(-1)).dt.seconds
 
+        train.drop( 'click_time', axis=1, inplace=True )
+
         HISTORY_CLICKS = {
             'identical_clicks': ['ip', 'app', 'device', 'os', 'channel'],
             'app_clicks': ['ip', 'app']
@@ -486,29 +489,30 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
         train['nip_hh_dev'] = train['nip_hh_dev'].astype('uint32')
         gc.collect()
 
-    with timer('Computing the number of channels associated with ip day hour... '):
-        n_chans = train[['ip','day','hour','channel']].groupby(by=['ip','day',
-                'hour'])[['channel']].count().reset_index().rename(columns={'channel': 'n_channels'})
-        train = train.merge(n_chans, on=['ip','day','hour'], how='left')
-        train['n_channels'] = train['n_channels'].astype('uint16')
-        del n_chans
-        gc.collect()
+    if feature_type != 'nano':
+        with timer('Computing the number of channels associated with ip day hour... '):
+            n_chans = train[['ip','day','hour','channel']].groupby(by=['ip','day',
+                    'hour'])[['channel']].count().reset_index().rename(columns={'channel': 'n_channels'})
+            train = train.merge(n_chans, on=['ip','day','hour'], how='left')
+            train['n_channels'] = train['n_channels'].astype('uint16')
+            del n_chans
+            gc.collect()
 
-    with timer('Computing the number of channels associated with ip app...'):
-        n_chans = train[['ip','app', 'channel']].groupby(by=['ip',
-                'app'])[['channel']].count().reset_index().rename(columns={'channel': 'ip_app_count'})
-        train = train.merge(n_chans, on=['ip','app'], how='left')
-        train['ip_app_count'] = train['ip_app_count'].astype('uint16')
-        del n_chans
-        gc.collect()
+        with timer('Computing the number of channels associated with ip app...'):
+            n_chans = train[['ip','app', 'channel']].groupby(by=['ip',
+                    'app'])[['channel']].count().reset_index().rename(columns={'channel': 'ip_app_count'})
+            train = train.merge(n_chans, on=['ip','app'], how='left')
+            train['ip_app_count'] = train['ip_app_count'].astype('uint16')
+            del n_chans
+            gc.collect()
 
-    with timer('Computing the number of channels associated with ip app os...'):
-        n_chans = train[['ip','app', 'os', 'channel']].groupby(by=['ip', 'app',
-                'os'])[['channel']].count().reset_index().rename(columns={'channel': 'ip_app_os_count'})
-        train = train.merge(n_chans, on=['ip','app', 'os'], how='left')
-        train['ip_app_os_count'] = train['ip_app_os_count'].astype('uint16')
-        del n_chans
-        gc.collect()
+        with timer('Computing the number of channels associated with ip app os...'):
+            n_chans = train[['ip','app', 'os', 'channel']].groupby(by=['ip', 'app',
+                    'os'])[['channel']].count().reset_index().rename(columns={'channel': 'ip_app_os_count'})
+            train = train.merge(n_chans, on=['ip','app', 'os'], how='left')
+            train['ip_app_os_count'] = train['ip_app_os_count'].astype('uint16')
+            del n_chans
+            gc.collect()
 
     if feature_type == 'andy_doufu':
         with timer('Computing the IP associated with app channel...'):
@@ -1030,9 +1034,9 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     print (model.summary())
     with timer("h_get_keras_data for train"):
-        x_train = h_get_keras_data(x_train, feature_type)
+        x_train = h_get_keras_data(x_train)
     with timer("h_get_keras_data for valid"):
-        x_valid = h_get_keras_data(x_valid, feature_type)
+        x_valid = h_get_keras_data(x_valid)
 
     ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
     class_weight = {0:.01,1:.99} # magic
@@ -1483,6 +1487,7 @@ def app_tune_xgb_bayesian(train, feature_type):
 
 def app_train_nn(train, test, model_type, feature_type, data_type):
 
+    target = ['is_attributed']
     if feature_type == 'andy_org':
         feature_names = ['ip', 'device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     elif feature_type == 'andy_doufu':
@@ -1490,9 +1495,11 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
     elif feature_type == 'pranav':
         feature_names = ['app','device','os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count',
               'nip_day_test_hh', 'nip_day_hh', 'nip_hh_os', 'nip_hh_app', 'nip_hh_dev']
-    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
+    elif feature_names == 'nano'
+         cols = train.columns
+         feature_names = list(set(cols) - set(target))
 
-    target = ['is_attributed']
+    categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
     splits = 1
 
@@ -1842,12 +1849,12 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'lgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
 
-    app_stack_2()
+    # app_stack_2()
     # with timer("genarete oof file ..."):
     #     h_get_oof_file(data_set, model_type, feature_type, use_pse)
     # my_simple_blend()
@@ -1855,18 +1862,19 @@ if __name__ == '__main__':
     ##################################
     # traing for nn
     ##################################
-    # train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
-    # print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
-    # print (train.info())
-    # print (test.info())
-    # if model_type == 'xgb' or model_type == 'lgb':
-    #     print ("goto train ", str(model_type) )
-    #     pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
-    # elif model_type == 'nn':
-    #     pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    with timer ("get train, test , pseudo data ..."):
+        train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
+    print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
+    print (train.info())
+    print (test.info())
+    if model_type == 'xgb' or model_type == 'lgb':
+        print ("goto train ", str(model_type) )
+        pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
+    elif model_type == 'nn':
+        pred = app_train_nn(train, test, model_type, feature_type, data_set)
 
-    # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    # g_make_single_submission(outfile, pred)
+    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    g_make_single_submission(outfile, pred)
     ##################################
 
 
