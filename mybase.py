@@ -355,6 +355,8 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
                     )[cols + [new_feature]],
                 on=cols, how='left'
             )
+            del group_object
+            gc.collect()
         # Define all the groupby transformations
         GROUPBY_AGGREGATIONS = [
 
@@ -414,6 +416,8 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
 
             # Merge back to X_train
             train = train.merge(gp, on=spec['groupby'], how='left')
+            del gp
+            gc.collect()
 
         GROUP_BY_NEXT_CLICKS = [
             {'groupby': ['ip']},
