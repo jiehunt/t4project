@@ -355,107 +355,107 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
                     )[cols + [new_feature]],
                 on=cols, how='left'
             )
-            # Define all the groupby transformations
-            GROUPBY_AGGREGATIONS = [
+        # Define all the groupby transformations
+        GROUPBY_AGGREGATIONS = [
 
-                # V1 - GroupBy Features #
-                #########################
-                # Variance in day, for ip-app-channel
-                {'groupby': ['ip','app','channel'], 'select': 'day', 'agg': 'var'},
-                # Variance in hour, for ip-app-os
-                {'groupby': ['ip','app','os'], 'select': 'hour', 'agg': 'var'},
-                # Variance in hour, for ip-day-channel
-                {'groupby': ['ip','day','channel'], 'select': 'hour', 'agg': 'var'},
-                # Count, for ip-day-hour
-                {'groupby': ['ip','day','hour'], 'select': 'channel', 'agg': 'count'},
-                # Count, for ip-app
-                {'groupby': ['ip', 'app'], 'select': 'channel', 'agg': 'count'},
-                # Count, for ip-app-os
-                {'groupby': ['ip', 'app', 'os'], 'select': 'channel', 'agg': 'count'},
-                # Count, for ip-app-day-hour
-                {'groupby': ['ip','app','day','hour'], 'select': 'channel', 'agg': 'count'},
-                # Mean hour, for ip-app-channel
-                {'groupby': ['ip','app','channel'], 'select': 'hour', 'agg': 'mean'},
+            # V1 - GroupBy Features #
+            #########################
+            # Variance in day, for ip-app-channel
+            {'groupby': ['ip','app','channel'], 'select': 'day', 'agg': 'var'},
+            # Variance in hour, for ip-app-os
+            {'groupby': ['ip','app','os'], 'select': 'hour', 'agg': 'var'},
+            # Variance in hour, for ip-day-channel
+            {'groupby': ['ip','day','channel'], 'select': 'hour', 'agg': 'var'},
+            # Count, for ip-day-hour
+            {'groupby': ['ip','day','hour'], 'select': 'channel', 'agg': 'count'},
+            # Count, for ip-app
+            {'groupby': ['ip', 'app'], 'select': 'channel', 'agg': 'count'},
+            # Count, for ip-app-os
+            {'groupby': ['ip', 'app', 'os'], 'select': 'channel', 'agg': 'count'},
+            # Count, for ip-app-day-hour
+            {'groupby': ['ip','app','day','hour'], 'select': 'channel', 'agg': 'count'},
+            # Mean hour, for ip-app-channel
+            {'groupby': ['ip','app','channel'], 'select': 'hour', 'agg': 'mean'},
 
-                # V2 - GroupBy Features #
-                #########################
-                # Average clicks on app by distinct users; is it an app they return to?
-                {'groupby': ['app'],
-                 'select': 'ip',
-                 'agg': lambda x: float(len(x)) / len(x.unique()),
-                 'agg_name': 'AvgViewPerDistinct'
-                },
-                # How popular is the app or channel?
-                {'groupby': ['app'], 'select': 'channel', 'agg': 'count'},
-                {'groupby': ['channel'], 'select': 'app', 'agg': 'count'}
-            ]
-            for spec in GROUPBY_AGGREGATIONS:
+            # V2 - GroupBy Features #
+            #########################
+            # Average clicks on app by distinct users; is it an app they return to?
+            {'groupby': ['app'],
+             'select': 'ip',
+             'agg': lambda x: float(len(x)) / len(x.unique()),
+             'agg_name': 'AvgViewPerDistinct'
+            },
+            # How popular is the app or channel?
+            {'groupby': ['app'], 'select': 'channel', 'agg': 'count'},
+            {'groupby': ['channel'], 'select': 'app', 'agg': 'count'}
+        ]
+        for spec in GROUPBY_AGGREGATIONS:
 
-                # Name of the aggregation we're applying
-                agg_name = spec['agg_name'] if 'agg_name' in spec else spec['agg']
+            # Name of the aggregation we're applying
+            agg_name = spec['agg_name'] if 'agg_name' in spec else spec['agg']
 
-                # Info
-                print("Grouping by {}, and aggregating {} with {}".format(
-                    spec['groupby'], spec['select'], agg_name
-                ))
+            # Info
+            print("Grouping by {}, and aggregating {} with {}".format(
+                spec['groupby'], spec['select'], agg_name
+            ))
 
-                # Unique list of features to select
-                all_features = list(set(spec['groupby'] + [spec['select']]))
+            # Unique list of features to select
+            all_features = list(set(spec['groupby'] + [spec['select']]))
 
-                # Name of new feature
-                new_feature = '{}_{}_{}'.format('_'.join(spec['groupby']), agg_name, spec['select'])
+            # Name of new feature
+            new_feature = '{}_{}_{}'.format('_'.join(spec['groupby']), agg_name, spec['select'])
 
-                # Perform the groupby
-                gp = train[all_features]. \
-                    groupby(spec['groupby'])[spec['select']]. \
-                    agg(spec['agg']). \
-                    reset_index(). \
-                    rename(index=str, columns={spec['select']: new_feature})
+            # Perform the groupby
+            gp = train[all_features]. \
+                groupby(spec['groupby'])[spec['select']]. \
+                agg(spec['agg']). \
+                reset_index(). \
+                rename(index=str, columns={spec['select']: new_feature})
 
-                # Merge back to X_train
-                train = train.merge(gp, on=spec['groupby'], how='left')
+            # Merge back to X_train
+            train = train.merge(gp, on=spec['groupby'], how='left')
 
-            GROUP_BY_NEXT_CLICKS = [
-                {'groupby': ['ip']},
-                {'groupby': ['ip', 'app']},
-                {'groupby': ['ip', 'channel']},
-                {'groupby': ['ip', 'os']},
-            ]
+        GROUP_BY_NEXT_CLICKS = [
+            {'groupby': ['ip']},
+            {'groupby': ['ip', 'app']},
+            {'groupby': ['ip', 'channel']},
+            {'groupby': ['ip', 'os']},
+        ]
 
-            # Calculate the time to next click for each group
-            for spec in GROUP_BY_NEXT_CLICKS:
+        # Calculate the time to next click for each group
+        for spec in GROUP_BY_NEXT_CLICKS:
 
-                # Name of new feature
-                new_feature = '{}_nextClick'.format('_'.join(spec['groupby']))
+            # Name of new feature
+            new_feature = '{}_nextClick'.format('_'.join(spec['groupby']))
 
-                # Unique list of features to select
-                all_features = spec['groupby'] + ['click_time']
+            # Unique list of features to select
+            all_features = spec['groupby'] + ['click_time']
 
-                # Run calculation
-                print(f">> Grouping by {spec['groupby']}, and saving time to next click in: {new_feature}")
-                train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: x.diff().shift(-1)).dt.seconds
+            # Run calculation
+            print(f">> Grouping by {spec['groupby']}, and saving time to next click in: {new_feature}")
+            train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: x.diff().shift(-1)).dt.seconds
 
-            train.drop( 'click_time', axis=1, inplace=True )
+        train.drop( 'click_time', axis=1, inplace=True )
 
-            HISTORY_CLICKS = {
-                'identical_clicks': ['ip', 'app', 'device', 'os', 'channel'],
-                'app_clicks': ['ip', 'app']
-            }
+        HISTORY_CLICKS = {
+            'identical_clicks': ['ip', 'app', 'device', 'os', 'channel'],
+            'app_clicks': ['ip', 'app']
+        }
 
-            # Go through different group-by combinations
-            for fname, fset in HISTORY_CLICKS.items():
+        # Go through different group-by combinations
+        for fname, fset in HISTORY_CLICKS.items():
 
-                # Clicks in the past
-                train['prev_'+fname] = train. \
-                    groupby(fset). \
-                    cumcount(). \
-                    rename('prev_'+fname)
+            # Clicks in the past
+            train['prev_'+fname] = train. \
+                groupby(fset). \
+                cumcount(). \
+                rename('prev_'+fname)
 
-                # Clicks in the future
-                train['future_'+fname] = train.iloc[::-1]. \
-                    groupby(fset). \
-                    cumcount(). \
-                    rename('future_'+fname).iloc[::-1]
+            # Clicks in the future
+            train['future_'+fname] = train.iloc[::-1]. \
+                groupby(fset). \
+                cumcount(). \
+                rename('future_'+fname).iloc[::-1]
 
     if feature_type == 'pranav':
         gp = train[['ip', 'day', 'hour', 'channel']].groupby(by=['ip', 'day',
