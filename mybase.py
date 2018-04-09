@@ -285,12 +285,14 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
     with timer("Creating new time features: 'hour' and 'day' and 'minute' 'second'..."):
         train['hour'] = pd.to_datetime(train.click_time).dt.hour.astype('uint8')
         train['day'] = pd.to_datetime(train.click_time).dt.day.astype('uint8')
-        # train['minute'] = pd.to_datetime(train.click_time).dt.minute.astype('uint8')
-        # train['second'] = pd.to_datetime(train.click_time).dt.second.astype('uint8')
-        train['minute'] = train['click_time'].dt.minute.astype('uint8')
-        train['second'] = train['click_time'].dt.second.astype('uint8')
+        train['minute'] = pd.to_datetime(train.click_time).dt.minute.astype('uint8')
+        train['second'] = pd.to_datetime(train.click_time).dt.second.astype('uint8')
+        # train['minute'] = train['click_time'].dt.minute.astype('uint8')
+        # train['second'] = train['click_time'].dt.second.astype('uint8')
         if feature_type != 'nano':
             train.drop( 'click_time', axis=1, inplace=True )
+        else :
+            train['click_time'] =pd.to_datetime(train.click_time)
         gc.collect()
 
         # train['click_hour'] = pd.to_datetime(train.attributed_time).dt.hour.astype('uint8')
