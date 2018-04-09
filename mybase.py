@@ -285,8 +285,10 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
     with timer("Creating new time features: 'hour' and 'day' and 'minute' 'second'..."):
         train['hour'] = pd.to_datetime(train.click_time).dt.hour.astype('uint8')
         train['day'] = pd.to_datetime(train.click_time).dt.day.astype('uint8')
-        train['minute'] = pd.to_datetime(train.click_time).dt.minute.astype('uint8')
-        train['second'] = pd.to_datetime(train.click_time).dt.second.astype('uint8')
+        # train['minute'] = pd.to_datetime(train.click_time).dt.minute.astype('uint8')
+        # train['second'] = pd.to_datetime(train.click_time).dt.second.astype('uint8')
+        train['minute'] = train['click_time'].dt.minute.astype('uint8')
+        train['second'] = train['click_time'].dt.second.astype('uint8')
         if feature_type != 'nano':
             train.drop( 'click_time', axis=1, inplace=True )
         gc.collect()
@@ -429,7 +431,7 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
 
                 # Run calculation
                 print(f">> Grouping by {spec['groupby']}, and saving time to next click in: {new_feature}")
-                train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: int(x).diff().shift(-1)).dt.seconds
+                train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: x.diff().shift(-1)).dt.seconds
 
             train.drop( 'click_time', axis=1, inplace=True )
 
@@ -640,6 +642,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
 
     predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     categorical = ['app', 'device', 'os', 'channel', 'hour']
+    not_use_list = ['is_attributed', 'ip']
     if feature_type == 'andy_org':
         predictors = ['device', 'app', 'os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count']
     elif feature_type == 'andy_doufu':
@@ -647,6 +650,9 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
     elif feature_type == 'pranav':
         predictors = ['app','device','os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count',
               'nip_day_test_hh', 'nip_day_hh', 'nip_hh_os', 'nip_hh_app', 'nip_hh_dev']
+    elif feature_names == 'nano':
+        cols = train.columns
+        predictors = list(set(cols) - set(not_use_list))
 
     target = ['is_attributed']
 
