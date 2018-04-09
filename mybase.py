@@ -193,6 +193,13 @@ def h_prepare_data_test(file_list):
 """"""""""""""""""""""""""""""
 # Feature
 """"""""""""""""""""""""""""""
+# Aggregation function
+def rate_calculation(x):
+    """Calculate the attributed rate. Scale by confidence"""
+    rate = x.sum() / float(x.count())
+    conf = np.min([1, np.log(x.count()) / log_group])
+    return rate * conf
+
 
 def f_get_train_test_data(data_set, feature_type, have_pse):
 
@@ -274,30 +281,176 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
         del test
         gc.collect()
 
-    with timer("Creating new time features: 'hour' and 'day'..."):
+    with timer("Creating new time features: 'hour' and 'day' and 'minute' 'second'..."):
         train['hour'] = pd.to_datetime(train.click_time).dt.hour.astype('uint8')
         train['day'] = pd.to_datetime(train.click_time).dt.day.astype('uint8')
+        train['minute'] = pd.to_datetime(train.click_time).dt.minute.astype('uint8')
+        train['second'] = pd.to_datetime(train.click_time).dt.second.astype('uint8')
         train.drop( 'click_time', axis=1, inplace=True )
         gc.collect()
 
         # train['click_hour'] = pd.to_datetime(train.attributed_time).dt.hour.astype('uint8')
         # train['click_day'] = pd.to_datetime(train.attributed_time).dt.day.astype('uint8')
+    train['in_test_hh'] = (   3
+                     - 2*train['hour'].isin(  most_freq_hours_in_test_data )
+                     - 1*train['hour'].isin( least_freq_hours_in_test_data ) ).astype('uint8')
+
+    gp = train[['ip', 'day', 'in_test_hh', 'channel']].groupby(by=['ip', 'day',
+             'in_test_hh'])[['channel']].count().reset_index().rename(index=str,
+             columns={'channel': 'nip_day_test_hh'})
+    train = train.merge(gp, on=['ip','day','in_test_hh'], how='left')
+    del gp
+    train.drop(['in_test_hh'], axis=1, inplace=True)
+    print( "nip_day_test_hh max value = ", train.nip_day_test_hh.max() )
+    train['nip_day_test_hh'] = train['nip_day_test_hh'].astype('uint32')
+    gc.collect()
+
+    if feature_type == 'nano':
+        ATTRIBUTION_CATEGORIES = [
+            # V1 Features #
+            ###############
+            ['ip'], ['app'], ['device'], ['os'], ['channel'],
+
+            # V2 Features #
+            ###############
+            ['app', 'channel'],
+            ['app', 'os'],
+            ['app', 'device'],
+        ]
+    # Find frequency of is_attributed for each unique value in column
+    freqs = {}
+    for cols in ATTRIBUTION_CATEGORIES:
+
+        # New feature name
+        new_feature = '_'.join(cols)+'_confRate'
+        print (new_feature)
+
+        # Perform the groupby
+        group_object = train.groupby(cols)
+
+        # Group sizes
+        group_sizes = group_object.size()
+        log_group = 100000 # 1000 views -> 60% confidence, 100 views -> 40% confidence
+        print(">> Calculating confidence-weighted rate for: {}.\n   Saving to: {}. Group Max /Mean / Median / Min: {} / {} / {} / {}".format(
+            cols, new_feature,
+            group_sizes.max(),
+            np.round(group_sizes.mean(), 2),
+            np.round(group_sizes.median(), 2),
+            group_sizes.min()
+        ))
+
+        # Perform the merge
+        train = train.merge(
+            group_object['is_attributed']. \
+                apply(rate_calculation). \
+                reset_index(). \
+                rename(
+                    index=str,
+                    columns={'is_attributed': new_feature}
+                )[cols + [new_feature]],
+            on=cols, how='left'
+        )
+        # Define all the groupby transformations
+        GROUPBY_AGGREGATIONS = [
+
+            # V1 - GroupBy Features #
+            #########################
+            # Variance in day, for ip-app-channel
+            {'groupby': ['ip','app','channel'], 'select': 'day', 'agg': 'var'},
+            # Variance in hour, for ip-app-os
+            {'groupby': ['ip','app','os'], 'select': 'hour', 'agg': 'var'},
+            # Variance in hour, for ip-day-channel
+            {'groupby': ['ip','day','channel'], 'select': 'hour', 'agg': 'var'},
+            # Count, for ip-day-hour
+            {'groupby': ['ip','day','hour'], 'select': 'channel', 'agg': 'count'},
+            # Count, for ip-app
+            {'groupby': ['ip', 'app'], 'select': 'channel', 'agg': 'count'},
+            # Count, for ip-app-os
+            {'groupby': ['ip', 'app', 'os'], 'select': 'channel', 'agg': 'count'},
+            # Count, for ip-app-day-hour
+            {'groupby': ['ip','app','day','hour'], 'select': 'channel', 'agg': 'count'},
+            # Mean hour, for ip-app-channel
+            {'groupby': ['ip','app','channel'], 'select': 'hour', 'agg': 'mean'},
+
+            # V2 - GroupBy Features #
+            #########################
+            # Average clicks on app by distinct users; is it an app they return to?
+            {'groupby': ['app'],
+             'select': 'ip',
+             'agg': lambda x: float(len(x)) / len(x.unique()),
+             'agg_name': 'AvgViewPerDistinct'
+            },
+            # How popular is the app or channel?
+            {'groupby': ['app'], 'select': 'channel', 'agg': 'count'},
+            {'groupby': ['channel'], 'select': 'app', 'agg': 'count'}
+        ]
+        for spec in GROUPBY_AGGREGATIONS:
+
+            # Name of the aggregation we're applying
+            agg_name = spec['agg_name'] if 'agg_name' in spec else spec['agg']
+
+            # Info
+            print("Grouping by {}, and aggregating {} with {}".format(
+                spec['groupby'], spec['select'], agg_name
+            ))
+
+            # Unique list of features to select
+            all_features = list(set(spec['groupby'] + [spec['select']]))
+
+            # Name of new feature
+            new_feature = '{}_{}_{}'.format('_'.join(spec['groupby']), agg_name, spec['select'])
+
+            # Perform the groupby
+            gp = train[all_features]. \
+                groupby(spec['groupby'])[spec['select']]. \
+                agg(spec['agg']). \
+                reset_index(). \
+                rename(index=str, columns={spec['select']: new_feature})
+
+            # Merge back to X_train
+            train = train.merge(gp, on=spec['groupby'], how='left')
+
+        GROUP_BY_NEXT_CLICKS = [
+            {'groupby': ['ip']},
+            {'groupby': ['ip', 'app']},
+            {'groupby': ['ip', 'channel']},
+            {'groupby': ['ip', 'os']},
+        ]
+
+        # Calculate the time to next click for each group
+        for spec in GROUP_BY_NEXT_CLICKS:
+
+            # Name of new feature
+            new_feature = '{}_nextClick'.format('_'.join(spec['groupby']))
+
+            # Unique list of features to select
+            all_features = spec['groupby'] + ['click_time']
+
+            # Run calculation
+            print(f">> Grouping by {spec['groupby']}, and saving time to next click in: {new_feature}")
+            train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: x.diff().shift(-1)).dt.seconds
+
+        HISTORY_CLICKS = {
+            'identical_clicks': ['ip', 'app', 'device', 'os', 'channel'],
+            'app_clicks': ['ip', 'app']
+        }
+
+        # Go through different group-by combinations
+        for fname, fset in HISTORY_CLICKS.items():
+
+            # Clicks in the past
+            train['prev_'+fname] = train. \
+                groupby(fset). \
+                cumcount(). \
+                rename('prev_'+fname)
+
+            # Clicks in the future
+            train['future_'+fname] = train.iloc[::-1]. \
+                groupby(fset). \
+                cumcount(). \
+                rename('future_'+fname).iloc[::-1]
 
     if feature_type == 'pranav':
-        train['in_test_hh'] = (   3
-                         - 2*train['hour'].isin(  most_freq_hours_in_test_data )
-                         - 1*train['hour'].isin( least_freq_hours_in_test_data ) ).astype('uint8')
-
-        gp = train[['ip', 'day', 'in_test_hh', 'channel']].groupby(by=['ip', 'day',
-                 'in_test_hh'])[['channel']].count().reset_index().rename(index=str,
-                 columns={'channel': 'nip_day_test_hh'})
-        train = train.merge(gp, on=['ip','day','in_test_hh'], how='left')
-        del gp
-        train.drop(['in_test_hh'], axis=1, inplace=True)
-        print( "nip_day_test_hh max value = ", train.nip_day_test_hh.max() )
-        train['nip_day_test_hh'] = train['nip_day_test_hh'].astype('uint32')
-        gc.collect()
-
         gp = train[['ip', 'day', 'hour', 'channel']].groupby(by=['ip', 'day',
                  'hour'])[['channel']].count().reset_index().rename(index=str,
                  columns={'channel': 'nip_day_hh'})
@@ -1622,9 +1775,18 @@ def app_stack_2():
     num_file = len(train_list)
 
     train = h_prepare_data_train(train_list)
+    cols = train.columns
+    cols = list(set(cols) - set(class_names))
+    print (cols)
     test = h_prepare_data_test(test_list)
+    # print (train.describe())
+    # print (test.describe())
 
     train_target = train[class_names]
+    # train.drop(['is_attributed'], axis=1)
+    train = train[cols]
+    print (train.describe())
+    print (test.describe())
 
     # train_list, test_list =  h_get_train_test_list()
     # num_file = len(train_list)
@@ -1648,10 +1810,10 @@ def app_stack_2():
 
     train_r = train
 
-    X_train, X_valid, Y_train, Y_valid = train_test_split(train_r, train_target, test_size = 0.1, random_state=1982)
+    # X_train, X_valid, Y_train, Y_valid = train_test_split(train_r, train_target, test_size = 0.1, random_state=1982)
     # Fit and submit
-    # X_train = train_r
-    # Y_train = train_target
+    X_train = train_r
+    Y_train = train_target
     scores = []
     for label in class_names:
         print(label)
@@ -1660,8 +1822,8 @@ def app_stack_2():
         scores.append(np.mean(score))
         stacker.fit(X_train, Y_train[label])
         pred = stacker.predict_proba(test)[:,1]
-        trn_pred = stacker.predict_proba(X_valid)[:,1]
-        print ("%s score : %f" % (str(label),  roc_auc_score(Y_valid[label], trn_pred)))
+        # trn_pred = stacker.predict_proba(X_valid)[:,1]
+        # print ("%s score : %f" % (str(label),  roc_auc_score(Y_valid[label], trn_pred)))
     print("CV score:", np.mean(scores))
 
     outfile = 'output/submission_stack_' + str(num_file) + 'file.csv'
@@ -1679,9 +1841,10 @@ if __name__ == '__main__':
     # sample all 1 and random 0 :set01
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
-    data_set = 'setfull'
+    data_set = 'set20'
     model_type = 'lgb' # xgb lgb nn
-    feature_type = 'pranav' # andy_org andy_doufu 'pranav'
+    # andy_org andy_doufu 'pranav' nano
+    feature_type = 'nano' #
     use_pse = False
 
     app_stack_2()
