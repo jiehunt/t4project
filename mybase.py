@@ -355,6 +355,7 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
                     )[cols + [new_feature]],
                 on=cols, how='left'
             )
+            train[new_feature] = train[new_feature].astype('float32')
             del group_object
             gc.collect()
         # Define all the groupby transformations
@@ -416,9 +417,14 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
 
             # Merge back to X_train
             train = train.merge(gp, on=spec['groupby'], how='left')
+            if spec['agg'] == 'count':
+                train[new_feature] = train[new_feature].astype('uint32')
+            else:
+                train[new_feature] = train[new_feature].astype('float32')
             del gp
             gc.collect()
 
+        print (train.info())
         GROUP_BY_NEXT_CLICKS = [
             {'groupby': ['ip']},
             {'groupby': ['ip', 'app']},
@@ -439,6 +445,7 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
             print(f">> Grouping by {spec['groupby']}, and saving time to next click in: {new_feature}")
             with thimer ("using ..."):
                 train[new_feature] = train[all_features].groupby(spec['groupby']).click_time.transform(lambda x: x.diff().shift(-1)).dt.seconds
+                train[new_feature] = train[new_feature].astype('float32')
 
         train.drop( 'click_time', axis=1, inplace=True )
 
@@ -461,6 +468,7 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
                 groupby(fset). \
                 cumcount(). \
                 rename('future_'+fname).iloc[::-1]
+            train['future_'+fname] = train['future_'+fname].astype('uint32')
 
     if feature_type == 'pranav':
         gp = train[['ip', 'day', 'hour', 'channel']].groupby(by=['ip', 'day',
@@ -664,7 +672,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
     elif feature_type == 'pranav':
         predictors = ['app','device','os', 'channel', 'hour', 'n_channels', 'ip_app_count', 'ip_app_os_count',
               'nip_day_test_hh', 'nip_day_hh', 'nip_hh_os', 'nip_hh_app', 'nip_hh_dev']
-    elif feature_names == 'nano':
+    elif feature_type == 'nano':
         cols = train.columns
         predictors = list(set(cols) - set(not_use_list))
 
