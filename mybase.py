@@ -1526,7 +1526,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
     elif feature_type == 'nano':
          cols = train.columns
          no_use = ['is_attributed', 'ip']
-         feature_names = list(set(cols) - set(target))
+         feature_names = list(set(cols) - set(no_use))
 
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
 
@@ -1958,10 +1958,10 @@ def f_get_nano_feature(data_set, feature_type):
 
     with timer("goto open train"):
         train = pd.read_csv(file_train, dtype=dtypes, header=0, usecols=train_cols)
-    with timer("goto describe train"):
-        print (train.describe(include='all'))
-    with timer("goto info train"):
-        print (train.info())
+    # with timer("goto describe train"):
+    #     print (train.describe(include='all'))
+    # with timer("goto info train"):
+    #     print (train.info())
     with timer("goto open test"):
         test = pd.read_csv(file_test, dtype=dtypes, header=0, usecols=test_cols)
 
@@ -1984,8 +1984,8 @@ if __name__ == '__main__':
     # sample all 1 and random 0 :set01
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
-    data_set = 'setfull'
-    model_type = 'lgb' # xgb lgb nn
+    data_set = 'set20'
+    model_type = 'nn' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
