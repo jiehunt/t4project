@@ -1021,9 +1021,12 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     emb_list = []
     input_list = []
     for n, feature in enumerate(features):
-        max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
         input_list.append(Input(shape=[1], name = str(feature)))
-        emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
+        if type(X_train[str(feature)] != 'float16'):
+            max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
+            emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
+        else:
+            emb_list.append(input_list[n])
 
     fe = concatenate(emb_list)
 
@@ -1552,13 +1555,13 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
         for n_fold, (trn_idx, val_idx) in enumerate(folds.split(train[feature_names], train[target])):
 
             print ("goto %d fold :" % n_fold)
-            print ("type(train[target]) is", type(train[target]))
+            # print ("type(train[target]) is", type(train[target]))
             X_train_n = train[feature_names].iloc[trn_idx]
             Y_train_n = train[target].iloc[trn_idx].values
             X_valid_n = train[feature_names].iloc[val_idx]
             Y_valid_n = train[target].iloc[val_idx].values
-            print ("type(X_train_n) is", type(X_train_n))
-            print ("type(Y_train_n) is", type(Y_train_n))
+            # print ("type(X_train_n) is", type(X_train_n))
+            # print ("type(Y_train_n) is", type(Y_train_n))
 
             if model_type == 'nn': # nn
                 if use_pse == True:
@@ -1962,6 +1965,21 @@ def f_get_nano_feature(data_set, feature_type):
     #     print (train.describe(include='all'))
     # with timer("goto info train"):
     #     print (train.info())
+
+    input_list = []
+    emb_list = []
+    for n, feature in enumerate(train_cols):
+        input_list.append(Input(shape=[1], name = str(feature)))
+        if type(X_train[str(feature)] != 'float16'):
+            print ("is int")
+            max_num = np.max([train[str(feature)].max(), 1])+1
+            emb_list.append(Embedding(max_num, 50)(input_list[n]))
+        else:
+            print ("is float")
+            emb_list.append(input_list[n])
+
+    print ("test over")
+
     with timer("goto open test"):
         test = pd.read_csv(file_test, dtype=dtypes, header=0, usecols=test_cols)
 
@@ -1984,8 +2002,8 @@ if __name__ == '__main__':
     # sample all 1 and random 0 :set01
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
-    data_set = 'set20'
-    model_type = 'nn' # xgb lgb nn
+    data_set = 'setfull'
+    model_type = 'lgb' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
