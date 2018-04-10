@@ -1005,7 +1005,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     features = x_train.columns
     print (features)
 
-    emb_n = 50
+    emb_n = 30
     dense_n = 1000
     batch_size = 50000
     # batch_size = 20000
@@ -1020,13 +1020,21 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     emb_list = []
     input_list = []
+    m_ish = 0
+
+    # for n, feature in enumerate(features):
+    #     if type(train[str(feature)][0]) != type(np.float16(1.0)):
+    #         m +=1
+
     for n, feature in enumerate(features):
-        input_list.append(Input(shape=(1,), name = str(feature)))
-        # if type(train[str(feature)][0]) != type(np.float16(1.0)):
-        #     max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
-        #     emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
-        # else:
-        emb_list.append(input_list[n])
+        if type(train[str(feature)][0]) != type(np.float16(1.0)):
+            input_list.append(Input(shape=[1], name = str(feature)))
+            max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
+            emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
+        else:
+            input_list.append(Input(shape=(1, 1), name = str(feature)))
+            # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
+            emb_list.append(input_list[n])
 
     fe = concatenate(emb_list)
 
@@ -1989,7 +1997,7 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
