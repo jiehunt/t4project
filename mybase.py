@@ -776,9 +776,9 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         evals_results = {}
 
         if use_pse == True:
-            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+            file_path = './model/'+'pse_'+ str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
         else :
-            file_path = './model/'+'pse_'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
+            file_path = './model/'+str(model_type) +'_'+str(feature_type)  +'_'+str(data_type) + '.hdf5'
 
         if os.path.exists(file_path):
             my_model = file_path
