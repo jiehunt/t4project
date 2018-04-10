@@ -1525,6 +1525,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
               'nip_day_test_hh', 'nip_day_hh', 'nip_hh_os', 'nip_hh_app', 'nip_hh_dev']
     elif feature_type == 'nano':
          cols = train.columns
+         no_use = ['is_attributed', 'ip']
          feature_names = list(set(cols) - set(target))
 
     categorical = ['ip', 'app', 'device', 'os', 'channel', 'hour']
@@ -1964,6 +1965,7 @@ def f_get_nano_feature(data_set, feature_type):
     with timer("goto open test"):
         test = pd.read_csv(file_test, dtype=dtypes, header=0, usecols=test_cols)
 
+    save_file = True
     if save_file == True:
         train.to_csv(file_train, index=False)
         test.to_csv(file_test, index=False)
