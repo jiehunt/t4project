@@ -1878,7 +1878,7 @@ def f_get_nano_feature(data_set, feature_type):
         'app'                              ,
         'channel'                          ,
         'device'                           ,
-        'ip'                               ,
+        # 'ip'                               ,
         'os'                               ,
         'hour'                             ,
         'day'                              ,
@@ -1920,7 +1920,7 @@ def f_get_nano_feature(data_set, feature_type):
         'app'                              :'uint16',
         'channel'                          :'uint16',
         'device'                           :'uint16',
-        'ip'                               :'uint32',
+        # 'ip'                               :'uint32',
         'os'                               :'uint16',
         'hour'                             :'uint8',
         'day'                              :'uint8',
@@ -1965,7 +1965,7 @@ def f_get_nano_feature(data_set, feature_type):
     with timer("goto open test"):
         test = pd.read_csv(file_test, dtype=dtypes, header=0, usecols=test_cols)
 
-    save_file = True
+    save_file = False
     if save_file == True:
         train.to_csv(file_train, index=False)
         test.to_csv(file_test, index=False)
