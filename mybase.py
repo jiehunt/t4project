@@ -129,9 +129,22 @@ def h_get_keras_data(dataset):
     columns = dataset.columns
 
     X = {}
+    m = 0
+    float_list = []
+
     for name in columns:
-        X[str(name)] = np.array(dataset[[str(name)]])
-        print (X[str(name)].shape)
+        if type(dataset[str(name)][0]) == type(np.float16(1.0)):
+            float_list.append(name)
+            m += 1
+
+    for name in columns:
+        if type(dataset[str(name)][0]) != type(np.float16(1.0)):
+            X[str(name)] = np.array(dataset[[str(name)]])
+
+    X[str('float_featre')] = np.array(dataset[float_list])
+    X[str('float_featre')] = X[str('float_featre')].reshepe((1, len(dataset), m))
+
+        # print (X[str(name)].shape)
 
     return X
 
@@ -1033,9 +1046,12 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
             max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
             emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
         else:
-            input_list.append(Input(shape=(1,1), name = str(feature)))
-            # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
-            emb_list.append(input_list[n])
+            m_ish += 1
+
+    if m_ish > 0:
+        input_list.append(Input(shape=(1,m_ish), name = str('float_featre')))
+        # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
+        emb_list.append(input_list[n])
 
     fe = concatenate(emb_list)
 
