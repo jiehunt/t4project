@@ -1865,6 +1865,60 @@ def app_stack_2():
     g_make_single_submission(outfile, pred)
     return
 
+
+def f_get_nano_feature(data_set, feature_type):
+
+    file_train = 'input/' + str(data_set)+'_'+ str(feature_type) + '_train.csv'
+    file_test = 'input/' + str(data_set)+'_'+ str(feature_type) + '_test.csv'
+
+    dtypes = {
+        # 'is_attributed'                    :'uint8',
+
+        # 'app'                              :'uint16',
+        # 'channel'                          :'uint16',
+        # 'device'                           :'uint16',
+        # 'ip'                               :'uint32',
+        # 'os'                               :'uint16',
+        # 'hour'                             :'uint8',
+        # 'day'                              :'uint8',
+        # 'minute'                           :'uint8',
+        # 'second'                           :'uint8',
+        # 'nip_day_test_hh'                  :'uint16',
+        'ip_confRate'                      :'float32',
+        'app_confRate'                     :'float32',
+        'device_confRate'                  :'float32',
+        'os_confRate'                      :'float32',
+        'channel_confRate'                 :'float32',
+        'app_channel_confRate'             :'float32',
+        'app_os_confRate'                  :'float32',
+        'app_device_confRate'              :'float32',
+        'ip_app_channel_var_day'           :'float32',
+        'ip_app_os_var_hour'               :'float32',
+        'ip_day_channel_var_hour'          :'float32',
+        'ip_day_hour_count_channel'        :'uint32',
+        'ip_app_count_channel'             :'uint32',
+        'ip_app_os_count_channel'          :'uint32',
+        'ip_app_day_hour_count_channel'    :'uint32',
+        'ip_app_channel_mean_hour'         :'float32',
+        'app_AvgViewPerDistinct_ip'        :'float32',
+        'app_count_channel'                :'uint32',
+        'channel_count_app'                :'uint32',
+        'ip_nextClick'                     :'float32',
+        'ip_app_nextClick'                 :'float32',
+        'ip_channel_nextClick'             :'float32',
+        'ip_os_nextClick'                  :'float32',
+        'prev_identical_clicks'            :'int64',
+        'future_identical_clicks'          :'uint32',
+        'prev_app_clicks'                  :'int64',
+        'future_app_clicks'                :'uint32',
+    }
+
+    with timer("goto open train"):
+        train = pd.read_csv(file_train, dtype=dtypes)
+    print (train.describe(include='all'))
+    print (train.info())
+
+
 """"""""""""""""""""""""""""""
 # Main Func
 """"""""""""""""""""""""""""""
@@ -1876,12 +1930,13 @@ if __name__ == '__main__':
     # sample all 1 and random 0 :set01
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
-    data_set = 'set20'
-    model_type = 'nn' # xgb lgb nn
+    data_set = 'setfull'
+    model_type = 'lgb' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
 
+    f_get_nano_feature(data_set, feature_type)
     # app_stack_2()
     # with timer("genarete oof file ..."):
     #     h_get_oof_file(data_set, model_type, feature_type, use_pse)
@@ -1890,19 +1945,19 @@ if __name__ == '__main__':
     ##################################
     # traing for nn
     ##################################
-    with timer ("get train, test , pseudo data ..."):
-        train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
-    print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
-    print (train.info())
-    print (test.info())
-    if model_type == 'xgb' or model_type == 'lgb':
-        print ("goto train ", str(model_type) )
-        pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
-    elif model_type == 'nn':
-        pred = app_train_nn(train, test, model_type, feature_type, data_set)
+    # with timer ("get train, test , pseudo data ..."):
+    #     train, test, pseudo = f_get_train_test_data(data_set, feature_type, use_pse)
+    # print (data_set, model_type, feature_type, 'use pse :', str(use_pse) )
+    # print (train.info())
+    # print (test.info())
+    # if model_type == 'xgb' or model_type == 'lgb':
+    #     print ("goto train ", str(model_type) )
+    #     pred =  app_train(train, test, model_type,feature_type, data_set,use_pse, pseudo)
+    # elif model_type == 'nn':
+    #     pred = app_train_nn(train, test, model_type, feature_type, data_set)
 
-    outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
-    g_make_single_submission(outfile, pred)
+    # outfile = 'output/' + str(data_set) + str(model_type) + str(feature_type) + '.csv'
+    # g_make_single_submission(outfile, pred)
     ##################################
 
 
