@@ -555,7 +555,7 @@ def f_get_train_test_data(data_set, feature_type, have_pse):
     else:
         pseudo = None
 
-    save_file = True
+    save_file = False
     if save_file == True:
         file_path = 'input/' + str(data_set)+'_'+ str(feature_type) + '_train.csv'
         train.to_csv(file_path, index=False)
@@ -1963,6 +1963,10 @@ def f_get_nano_feature(data_set, feature_type):
         print (train.info())
     with timer("goto open test"):
         test = pd.read_csv(file_test, dtype=dtypes, header=0, usecols=test_cols)
+
+    if save_file == True:
+        train.to_csv(file_train, index=False)
+        test.to_csv(file_test, index=False)
 
     return train, test, None
 
