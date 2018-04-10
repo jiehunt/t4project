@@ -1021,12 +1021,12 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     emb_list = []
     input_list = []
     for n, feature in enumerate(features):
-        input_list.append(Input(shape=[1], name = str(feature)))
-        if type(train[str(feature)][0]) != type(np.float16(1.0)):
-            max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
-            emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
-        else:
-            emb_list.append(input_list[n])
+        input_list.append(Input(shape=(1,), name = str(feature)))
+        # if type(train[str(feature)][0]) != type(np.float16(1.0)):
+        #     max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
+        #     emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
+        # else:
+        emb_list.append(input_list[n])
 
     fe = concatenate(emb_list)
 
