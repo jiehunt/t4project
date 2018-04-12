@@ -152,6 +152,12 @@ def h_get_keras_data(dataset):
 
     return X
 
+def h_get_keras_data2(dataset):
+    X  = {}
+    X[str('all_feature')]  = np.array(dataset)
+
+    return X
+
 def h_get_train_test_list():
    oof_files= glob.glob("oof/*")
    train_list = []
@@ -1055,13 +1061,12 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
             input_list.append(Input(shape=(1,1,), name = str(feature)))
             m_ish += 1
 
-    # if m_ish > 0:
-    #     # input_list.append()
-    #     # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
-    #     emb_list.append(Input(shape=(1,m_ish), name = str('float_featre')))
-
     # fe = concatenate(emb_list)
-    fe = concatenate(input_list)
+    # fe = concatenate(input_list)
+
+    fe = Input(shape=(1,len(features)), name = str('all_feature'))
+
+
 
     ############################
     # Old version
@@ -1098,9 +1103,9 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     print (model.summary())
     with timer("h_get_keras_data for train"):
-        x_train = h_get_keras_data(x_train)
+        x_train = h_get_keras_data2(x_train)
     with timer("h_get_keras_data for valid"):
-        x_valid = h_get_keras_data(x_valid)
+        x_valid = h_get_keras_data2(x_valid)
 
     ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
     class_weight = {0:.01,1:.99} # magic
@@ -1918,17 +1923,17 @@ def f_get_nano_feature(data_set, feature_type):
         'os'                               ,
         'hour'                             ,
         'day'                              ,
-        'minute'                           ,
-        'second'                           ,
+        # 'minute'                           ,
+        # 'second'                           ,
         'nip_day_test_hh'                  ,
-        'ip_confRate'                      ,
-        'app_confRate'                     ,
-        'device_confRate'                  ,
-        'os_confRate'                      ,
-        'channel_confRate'                 ,
-        'app_channel_confRate'             ,
-        'app_os_confRate'                  ,
-        'app_device_confRate'              ,
+        # 'ip_confRate'                      ,
+        # 'app_confRate'                     ,
+        # 'device_confRate'                  ,
+        # 'os_confRate'                      ,
+        # 'channel_confRate'                 ,
+        # 'app_channel_confRate'             ,
+        # 'app_os_confRate'                  ,
+        # 'app_device_confRate'              ,
         'ip_app_channel_var_day'           ,
         'ip_app_os_var_hour'               ,
         'ip_day_channel_var_hour'          ,
@@ -1940,14 +1945,14 @@ def f_get_nano_feature(data_set, feature_type):
         'app_AvgViewPerDistinct_ip'        ,
         'app_count_channel'                ,
         'channel_count_app'                ,
-        'ip_nextClick'                     ,
-        'ip_app_nextClick'                 ,
-        'ip_channel_nextClick'             ,
-        'ip_os_nextClick'                  ,
-        'prev_identical_clicks'            ,
-        'future_identical_clicks'          ,
-        'prev_app_clicks'                  ,
-        'future_app_clicks'                ,
+        # 'ip_nextClick'                     ,
+        # 'ip_app_nextClick'                 ,
+        # 'ip_channel_nextClick'             ,
+        # 'ip_os_nextClick'                  ,
+        # 'prev_identical_clicks'            ,
+        # 'future_identical_clicks'          ,
+        # 'prev_app_clicks'                  ,
+        # 'future_app_clicks'                ,
         'nip_hh_os'                        ,
         'nip_hh_dev'                       ,
         ]
