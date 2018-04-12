@@ -140,9 +140,10 @@ def h_get_keras_data(dataset):
     for name in columns:
         if type(train[str(name)][0]) != type(np.float16(1.0)):
             X[str(name)] = np.array(dataset[[str(name)]])
+            X[str(name)] = X[str(name)].reshape((1, len(dataset), 1))
         else:
             X[str(name)] = np.array(dataset[[str(name)]])
-            # X[str(name)] = X[str(name)].reshape((1, len(dataset), 1))
+            X[str(name)] = X[str(name)].reshape((1, len(dataset), 1))
 
     # X[str('float_featre')] = np.array(dataset[float_list])
     # X[str('float_featre')] = X[str('float_featre')].reshape((1, len(dataset), m))
@@ -2006,7 +2007,7 @@ def f_get_nano_feature(data_set, feature_type):
         test = pd.read_csv(file_test, dtype=dtypes, header=0, usecols=test_cols)
 
 
-    need_og = True
+    need_og = False
     if need_og == True:
         with timer('Binding the training and test set together...'):
             len_train = len(train)
@@ -2036,7 +2037,7 @@ def f_get_nano_feature(data_set, feature_type):
         train = train[:len_train]
 
 
-    save_file = True
+    save_file = False
     if save_file == True:
         train.to_csv(file_train, index=False)
         test.to_csv(file_test, index=False)
@@ -2056,7 +2057,7 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'lgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
