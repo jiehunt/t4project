@@ -736,7 +736,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
         'nthread': 4,
         'verbose': 0,
-        'scale_pos_weight':403, # because training data is extremely unbalanced
+        'scale_pos_weight':201, # 201 or 403 because training data is extremely unbalanced
         "device": "gpu",
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
@@ -1947,6 +1947,8 @@ def f_get_nano_feature(data_set, feature_type):
         'future_identical_clicks'          ,
         'prev_app_clicks'                  ,
         'future_app_clicks'                ,
+        # 'nip_hh_os'                        ,
+        # 'nip_hh_dev'                       ,
         ]
     test_cols = list(set(train_cols) -set(target_cols))
     dtypes = {
@@ -1989,6 +1991,8 @@ def f_get_nano_feature(data_set, feature_type):
         'future_identical_clicks'          :'uint16',
         'prev_app_clicks'                  :'uint32',
         'future_app_clicks'                :'uint32',
+        'nip_hh_os'                        :'uint16',
+        'nip_hh_dev'                       :'uint32',
     }
 
     with timer("goto open train"):
@@ -2001,7 +2005,38 @@ def f_get_nano_feature(data_set, feature_type):
     with timer("goto open test"):
         test = pd.read_csv(file_test, dtype=dtypes, header=0, usecols=test_cols)
 
-    save_file = False
+
+    need_og = True
+    if need_og == True:
+        with timer('Binding the training and test set together...'):
+            len_train = len(train)
+            # print('The initial size of the train set is', len_train)
+            train=train.append(test)
+
+        gp = train[['ip', 'day', 'os', 'hour', 'channel']].groupby(by=['ip', 'os', 'day',
+                 'hour'])[['channel']].count().reset_index().rename(index=str,
+                 columns={'channel': 'nip_hh_os'})
+        train = train.merge(gp, on=['ip','os','hour','day'], how='left')
+        del gp
+        print( "nip_hh_os max value = ", train.nip_hh_os.max() )
+        train['nip_hh_os'] = train['nip_hh_os'].astype('uint16')
+        gc.collect()
+
+        gp = train[['ip', 'device', 'hour', 'day', 'channel']].groupby(by=['ip', 'device', 'day',
+                 'hour'])[['channel']].count().reset_index().rename(index=str,
+                 columns={'channel': 'nip_hh_dev'})
+        train = train.merge(gp, on=['ip','device','day','hour'], how='left')
+        del gp
+        print( "nip_hh_dev max value = ", train.nip_hh_dev.max() )
+        train['nip_hh_dev'] = train['nip_hh_dev'].astype('uint32')
+        gc.collect()
+
+        target = 'is_attributed'
+        test = train[len_train:].copy().drop( target, axis=1 )
+        train = train[:len_train]
+
+
+    save_file = True
     if save_file == True:
         train.to_csv(file_train, index=False)
         test.to_csv(file_test, index=False)
@@ -2021,7 +2056,7 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
