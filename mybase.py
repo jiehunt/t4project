@@ -1914,7 +1914,7 @@ def f_get_nano_feature(data_set, feature_type):
         'app'                              ,
         'channel'                          ,
         'device'                           ,
-        'ip'                               ,
+        # 'ip'                               ,
         'os'                               ,
         'hour'                             ,
         'day'                              ,
@@ -1948,8 +1948,8 @@ def f_get_nano_feature(data_set, feature_type):
         'future_identical_clicks'          ,
         'prev_app_clicks'                  ,
         'future_app_clicks'                ,
-        # 'nip_hh_os'                        ,
-        # 'nip_hh_dev'                       ,
+        'nip_hh_os'                        ,
+        'nip_hh_dev'                       ,
         ]
     test_cols = list(set(train_cols) -set(target_cols))
     dtypes = {
@@ -2007,7 +2007,7 @@ def f_get_nano_feature(data_set, feature_type):
         test = pd.read_csv(file_test, dtype=dtypes, header=0, usecols=test_cols)
 
 
-    need_og = True
+    need_og = False
     if need_og == True:
         with timer('Binding the training and test set together...'):
             len_train = len(train)
@@ -2037,7 +2037,7 @@ def f_get_nano_feature(data_set, feature_type):
         train = train[:len_train]
 
 
-    save_file = True
+    save_file = False
     if save_file == True:
         train.to_csv(file_train, index=False)
         test.to_csv(file_test, index=False)
@@ -2057,7 +2057,7 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'lgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
