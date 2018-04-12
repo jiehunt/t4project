@@ -1059,7 +1059,8 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     #     # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
     #     emb_list.append(Input(shape=(1,m_ish), name = str('float_featre')))
 
-    fe = concatenate(emb_list)
+    # fe = concatenate(emb_list)
+    fe = concatenate(input_list)
 
     ############################
     # Old version
