@@ -133,12 +133,12 @@ def h_get_keras_data(dataset):
     float_list = []
 
     for name in columns:
-        if type(dataset[str(name)][0]) == type(np.float16(1.0)):
+        if type(train[str(name)][0]) == type(np.float16(1.0)):
             float_list.append(name)
             m += 1
 
     for name in columns:
-        if type(dataset[str(name)][0]) != type(np.float16(1.0)):
+        if type(train[str(name)][0]) != type(np.float16(1.0)):
             X[str(name)] = np.array(dataset[[str(name)]])
 
     X[str('float_featre')] = np.array(dataset[float_list])
