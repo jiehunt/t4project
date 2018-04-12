@@ -1079,8 +1079,9 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     ############################
     # New version 20180402
     ############################
-    s_dout = SpatialDropout1D(0.2)(fe)
-    fl1 = Flatten()(s_dout)
+    # s_dout = SpatialDropout1D(0.2)(fe)
+    # fl1 = Flatten()(s_dout)
+    fl1 = Flatten()(fe)
     conv = Conv1D(100, kernel_size=4, strides=1, padding='same')(s_dout)
     fl2 = Flatten()(conv)
     concat = concatenate([(fl1), (fl2)])
