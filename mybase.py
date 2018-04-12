@@ -140,10 +140,10 @@ def h_get_keras_data(dataset):
     for name in columns:
         if type(train[str(name)][0]) != type(np.float16(1.0)):
             X[str(name)] = np.array(dataset[[str(name)]])
-            X[str(name)] = X[str(name)].reshape((len(dataset),1))
+            X[str(name)] = X[str(name)].reshape((len(dataset),1, 1))
         else:
             X[str(name)] = np.array(dataset[[str(name)]])
-            X[str(name)] = X[str(name)].reshape((len(dataset),1))
+            X[str(name)] = X[str(name)].reshape((len(dataset),1, 1))
 
     # X[str('float_featre')] = np.array(dataset[float_list])
     # X[str('float_featre')] = X[str('float_featre')].reshape((1, len(dataset), m))
@@ -1047,12 +1047,12 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     for n, feature in enumerate(features):
         if type(x_train[str(feature)][0]) != type(np.float16(1.0)):
-            input_list.append(Input(shape=(2,), name = str(feature)))
+            input_list.append(Input(shape=(1,1,), name = str(feature)))
             max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
             # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
             nn += 1
         else:
-            input_list.append(Input(shape=(2,), name = str(feature)))
+            input_list.append(Input(shape=(1,1,), name = str(feature)))
             m_ish += 1
 
     # if m_ish > 0:
