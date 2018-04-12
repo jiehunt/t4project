@@ -142,7 +142,7 @@ def h_get_keras_data(dataset):
             X[str(name)] = np.array(dataset[[str(name)]])
         else:
             X[str(name)] = np.array(dataset[[str(name)]])
-            X[str(name)] = X[str(name)].reshape((1, len(dataset), 1))
+            # X[str(name)] = X[str(name)].reshape((1, len(dataset), 1))
 
     # X[str('float_featre')] = np.array(dataset[float_list])
     # X[str('float_featre')] = X[str('float_featre')].reshape((1, len(dataset), m))
