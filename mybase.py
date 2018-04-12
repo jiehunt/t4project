@@ -1608,7 +1608,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
 
         print("goto test")
         with timer("Goto prepare test Data"):
-            test = h_get_keras_data(test, feature_type)
+            test = h_get_keras_data(test)
         with timer("Goto predict test Data"):
             pred = model.predict(test)
 
@@ -1914,7 +1914,7 @@ def f_get_nano_feature(data_set, feature_type):
         'app'                              ,
         'channel'                          ,
         'device'                           ,
-        # 'ip'                               ,
+        'ip'                               ,
         'os'                               ,
         'hour'                             ,
         'day'                              ,
@@ -2057,7 +2057,7 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
