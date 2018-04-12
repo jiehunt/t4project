@@ -1051,22 +1051,20 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     #     if type(train[str(feature)][0]) != type(np.float16(1.0)):
     #         m +=1
 
-    for n, feature in enumerate(features):
-        if type(x_train[str(feature)][0]) != type(np.float16(1.0)):
-            input_list.append(Input(shape=(1,1,), name = str(feature)))
-            max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
-            # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
-            nn += 1
-        else:
-            input_list.append(Input(shape=(1,1,), name = str(feature)))
-            m_ish += 1
+    # for n, feature in enumerate(features):
+    #     if type(x_train[str(feature)][0]) != type(np.float16(1.0)):
+    #         input_list.append(Input(shape=(1,1,), name = str(feature)))
+    #         max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
+    #         # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
+    #         nn += 1
+    #     else:
+    #         input_list.append(Input(shape=(1,1,), name = str(feature)))
+    #         m_ish += 1
 
+    input_list.append(Input(shape=(1,len(features)), name = str('all_feature')))
     # fe = concatenate(emb_list)
-    # fe = concatenate(input_list)
 
-    fe = Input(shape=(1,len(features)), name = str('all_feature'))
-
-
+    fe = concatenate(input_list)
 
     ############################
     # Old version
@@ -1613,7 +1611,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
 
         print("goto test")
         with timer("Goto prepare test Data"):
-            test = h_get_keras_data(test)
+            test = h_get_keras_data2(test)
         with timer("Goto predict test Data"):
             pred = model.predict(test)
 
@@ -2062,7 +2060,7 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'nn' # xgb lgb nn
+    model_type = 'lgb' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
