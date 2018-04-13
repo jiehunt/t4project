@@ -138,7 +138,7 @@ def h_get_keras_data(dataset):
 
         other_feature = list(set(columns) - set(emb_feature) )
         X[str('other_feature')]  = np.array(dataset[other_feature])
-        X[str('other_feature')]  = X[str('other_feature')].reshape((1,len(dataset),len(other_feature)))
+        # X[str('other_feature')]  = X[str('other_feature')].reshape((1,len(dataset),len(other_feature)))
     else:
         for name in columns:
             X[str(name)] = np.array(dataset[[str(name)]])
@@ -1055,7 +1055,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
         other_feature = list(set(features) - set(emb_feature) )
         input_list.append( Input(shape=(1, len(other_feature)), name = str('other_feature')) )
-        emb_list.append(input_list[-1])
+        # emb_list.append(input_list[-1])
 
 
     # for n, feature in enumerate(features):
@@ -1094,7 +1094,8 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     fl1 = Flatten()(s_dout)
     conv = Conv1D(100, kernel_size=4, strides=1, padding='same')(s_dout)
     fl2 = Flatten()(conv)
-    concat = concatenate([(fl1), (fl2)])
+    fl3 = Flatten()(input_list[-1])
+    concat = concatenate([(fl1), (fl2), (fl3)])
     x = Dropout(dr)(Dense(dense_n,activation='relu')(concat))
     x = Dropout(dr)(Dense(dense_n,activation='relu')(x))
     outp = Dense(1,activation='sigmoid')(x)
