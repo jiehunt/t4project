@@ -1061,10 +1061,11 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     #         input_list.append(Input(shape=(1,1,), name = str(feature)))
     #         m_ish += 1
 
-    input_list.append(Input(shape=(1,len(features)), name = str('all_feature')))
+    # input_list.append(Input(shape=(1,len(features)), name = str('all_feature')))
     # fe = concatenate(emb_list)
 
-    fe = concatenate(input_list)
+    # fe = concatenate(input_list)
+    fe = Input(shape=(1,len(features)), name = str('all_feature'))
 
     ############################
     # Old version
@@ -1943,14 +1944,14 @@ def f_get_nano_feature(data_set, feature_type):
         'app_AvgViewPerDistinct_ip'        ,
         'app_count_channel'                ,
         'channel_count_app'                ,
-        # 'ip_nextClick'                     ,
-        # 'ip_app_nextClick'                 ,
-        # 'ip_channel_nextClick'             ,
-        # 'ip_os_nextClick'                  ,
-        # 'prev_identical_clicks'            ,
-        # 'future_identical_clicks'          ,
-        # 'prev_app_clicks'                  ,
-        # 'future_app_clicks'                ,
+        'ip_nextClick'                     ,
+        'ip_app_nextClick'                 ,
+        'ip_channel_nextClick'             ,
+        'ip_os_nextClick'                  ,
+        'prev_identical_clicks'            ,
+        'future_identical_clicks'          ,
+        'prev_app_clicks'                  ,
+        'future_app_clicks'                ,
         'nip_hh_os'                        ,
         'nip_hh_dev'                       ,
         ]
@@ -2060,7 +2061,7 @@ if __name__ == '__main__':
     # sample all 1 and first part 0 :set001
     # sample all 1 and half (1/2sample) 0: set20 set21
     data_set = 'set20'
-    model_type = 'lgb' # xgb lgb nn
+    model_type = 'nn' # xgb lgb nn
     # andy_org andy_doufu 'pranav' nano
     feature_type = 'nano' #
     use_pse = False
