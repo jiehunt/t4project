@@ -142,7 +142,8 @@ def h_get_keras_data(dataset):
     #     # X[str('other_feature')]  = X[str('other_feature')].reshape((1,len(dataset),len(other_feature)))
     # else:
     for name in columns:
-        X[str(name)] = np.array(dataset[[str(name)]])
+        if type(train[str(name)][0]) != type(np.float16(1.0)):
+            X[str(name)] = np.array(dataset[[str(name)]])
 
     return X
 
@@ -1023,7 +1024,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     features = x_train.columns
     print (features)
 
-    emb_n = 50
+    emb_n = 30
     dense_n = 1000
     batch_size = 50000
     # batch_size = 20000
@@ -1045,34 +1046,34 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     # for n, feature in enumerate(features):
     #     if type(train[str(feature)][0]) != type(np.float16(1.0)):
     #         m +=1
-    if feature_type == 'nano':
-        # emb_feature =  ['app','device','os', 'channel', 'hour',
-        #       'nip_day_test_hh',  'nip_hh_os', 'nip_hh_dev']
+    # if feature_type == 'nano':
+    #     # emb_feature =  ['app','device','os', 'channel', 'hour',
+    #     #       'nip_day_test_hh',  'nip_hh_os', 'nip_hh_dev']
 
-        for n, feature in enumerate(features):
-            input_list.append(Input(shape=[1], name = str(feature)))
-            # max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
-            # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
+    #     for n, feature in enumerate(features):
+    #         input_list.append(Input(shape=[1], name = str(feature)))
+    #         # max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
+    #         # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
 
         # other_feature = list(set(features) - set(emb_feature) )
         # input_list.append( Input(shape=[1], name = str('ip_app_nextClick')) )
         # emb_list.append(input_list[-1])
 
 
-    # for n, feature in enumerate(features):
-    #     if type(x_train[str(feature)][0]) != type(np.float16(1.0)):
-    #         input_list.append(Input(shape=(1,1,), name = str(feature)))
-    #         max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
-    #         # emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
-    #         nn += 1
-    #     else:
-    #         input_list.append(Input(shape=(1,1,), name = str(feature)))
-    #         m_ish += 1
+    for n, feature in enumerate(features):
+        if type(x_train[str(feature)][0]) != type(np.float16(1.0)):
+            input_list.append(Input(shape=[1], name = str(feature)))
+            max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
+            emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
+        #     nn += 1
+        # else:
+        #     input_list.append(Input(shape=(1,1,), name = str(feature)))
+        #     m_ish += 1
 
     # input_list.append(Input(shape=(1,len(features)), name = str('all_feature')))
     # fe = concatenate(emb_list)
 
-    # fe = concatenate(emb_list)
+    fe = concatenate(emb_list)
     # fe = Input(shape=(1,len(features)), name = str('all_feature'))
 
     ############################
@@ -1091,13 +1092,13 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     ############################
     # New version 20180402
     ############################
-    # s_dout = SpatialDropout1D(0.2)(fe)
-    # fl1 = Flatten()(s_dout)
-    # conv = Conv1D(100, kernel_size=4, strides=1, padding='same')(s_dout)
-    # fl2 = Flatten()(conv)
+    s_dout = SpatialDropout1D(0.2)(fe)
+    fl1 = Flatten()(s_dout)
+    conv = Conv1D(100, kernel_size=4, strides=1, padding='same')(s_dout)
+    fl2 = Flatten()(conv)
     # fl3 = input_list[-1]
-    # concat = concatenate([(fl1), (fl2), (fl3)])
-    concat = concatenate(input_list)
+    concat = concatenate([(fl1), (fl2)])
+    # concat = concatenate(input_list)
     x = Dropout(dr)(Dense(dense_n,activation='relu')(concat))
     x = Dropout(dr)(Dense(dense_n,activation='relu')(x))
     outp = Dense(1,activation='sigmoid')(x)
