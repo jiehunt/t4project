@@ -136,9 +136,9 @@ def h_get_keras_data(dataset):
         for name in emb_feature:
             X[str(name)] = np.array(dataset[[str(name)]])
 
-        # other_feature = list(set(columns) - set(emb_feature) )
-        # X[str('other_feature')]  = np.array(dataset[other_feature])
-        # X[str('other_feature')]  = X[str('other_feature')].reshape((len(dataset),1, len(other_feature)))
+        other_feature = list(set(columns) - set(emb_feature) )
+        X[str('other_feature')]  = np.array(dataset[other_feature])
+        X[str('other_feature')]  = X[str('other_feature')].reshape((1,len(dataset),len(other_feature)))
     else:
         for name in columns:
             X[str(name)] = np.array(dataset[[str(name)]])
@@ -723,8 +723,8 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
         'boosting_type': 'gbdt',
         'objective': 'binary',
         'metric':'auc',
-        # 'learning_rate': 0.3,
-        'learning_rate': 0.1,
+        'learning_rate': 0.3,
+        # 'learning_rate': 0.1,
         'num_leaves': 7,  # we should let it be smaller than 2^(max_depth)
         'max_depth': 4,  # -1 means no limit
         'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
@@ -792,7 +792,7 @@ def m_lgb_model(train, test, model_type, feature_type, data_type, use_pse,pseudo
                          valid_sets=[dtrain, dvalid],
                          valid_names=['train','valid'],
                          evals_result=evals_results,
-                         num_boost_round=5000,
+                         num_boost_round=1000,
                          early_stopping_rounds=50,
                          # num_boost_round=5,
                          # early_stopping_rounds=1,
@@ -1053,9 +1053,9 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
             max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
             emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
 
-        # other_feature = list(set(features) - set(emb_feature) )
-        # input_list.append( Input(shape=(1, len(other_feature)), name = str('other_feature')) )
-        # emb_list.append(input_list[-1])
+        other_feature = list(set(features) - set(emb_feature) )
+        input_list.append( Input(shape=(1, len(other_feature)), name = str('other_feature')) )
+        emb_list.append(input_list[-1])
 
 
     # for n, feature in enumerate(features):
