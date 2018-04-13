@@ -1055,7 +1055,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
         other_feature = list(set(features) - set(emb_feature) )
         input_list.append( Input(shape=(1, len(other_feature)), name = str('other_feature')) )
-        row_list.append(input_list[-1])
+        emb_list.append(input_list[-1])
 
 
     # for n, feature in enumerate(features):
@@ -1071,7 +1071,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     # input_list.append(Input(shape=(1,len(features)), name = str('all_feature')))
     # fe = concatenate(emb_list)
 
-    fe = concatenate(emb_list, row_list)
+    fe = concatenate(emb_list)
     # fe = Input(shape=(1,len(features)), name = str('all_feature'))
 
     ############################
