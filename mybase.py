@@ -1094,7 +1094,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     fl1 = Flatten()(s_dout)
     conv = Conv1D(100, kernel_size=4, strides=1, padding='same')(s_dout)
     fl2 = Flatten()(conv)
-    fl3 = Flatten()(input_list[-1])
+    fl3 = input_list[-1]
     concat = concatenate([(fl1), (fl2), (fl3)])
     x = Dropout(dr)(Dense(dense_n,activation='relu')(concat))
     x = Dropout(dr)(Dense(dense_n,activation='relu')(x))
