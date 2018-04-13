@@ -129,26 +129,19 @@ def h_get_keras_data(dataset):
     columns = dataset.columns
 
     X = {}
-    m = 0
-    float_list = []
+    if feature_type == 'nano':
+        emb_feature =  ['app','device','os', 'channel', 'hour',
+              'nip_day_test_hh',  'nip_hh_os', 'nip_hh_dev']
 
-    for name in columns:
-        if type(train[str(name)][0]) == type(np.float16(1.0)):
-            float_list.append(name)
-            m += 1
-
-    for name in columns:
-        if type(train[str(name)][0]) != type(np.float16(1.0)):
+        for name in emb_feature:
             X[str(name)] = np.array(dataset[[str(name)]])
-            X[str(name)] = X[str(name)].reshape((len(dataset),1, 1))
-        else:
+
+        other_feature = list(set(columns) - set(emb_feature) )
+        X[str('other_feature')]  = np.array(dataset[other_feature])
+        X[str('other_feature')]  = X[str('other_feature')].reshape((len(dataset),1, len(other_feature)))
+    else:
+        for name in columns:
             X[str(name)] = np.array(dataset[[str(name)]])
-            X[str(name)] = X[str(name)].reshape((len(dataset),1, 1))
-
-    # X[str('float_featre')] = np.array(dataset[float_list])
-    # X[str('float_featre')] = X[str('float_featre')].reshape((1, len(dataset), m))
-
-        # print (X[str(name)].shape)
 
     return X
 
@@ -1029,7 +1022,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     features = x_train.columns
     print (features)
 
-    emb_n = 30
+    emb_n = 50
     dense_n = 1000
     batch_size = 50000
     # batch_size = 20000
@@ -1043,6 +1036,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     early_stop = EarlyStopping(monitor = "val_loss", mode = "min", patience = 5)
 
     emb_list = []
+    row_list = []
     input_list = []
     m_ish = 0
     nn = 0
@@ -1050,6 +1044,17 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     # for n, feature in enumerate(features):
     #     if type(train[str(feature)][0]) != type(np.float16(1.0)):
     #         m +=1
+    if feature_type == 'nano':
+        emb_feature =  ['app','device','os', 'channel', 'hour',
+              'nip_day_test_hh',  'nip_hh_os', 'nip_hh_dev']
+
+        for feature in emb_feature:
+            input_list.append(Input(shape=[1], name = str(feature)))
+            emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
+
+        other_feature = list(set(features) - set(emb_feature) )
+        input_list.append( Input(shape=(1, len(other_feature)), name = str('other_feature')) )
+
 
     # for n, feature in enumerate(features):
     #     if type(x_train[str(feature)][0]) != type(np.float16(1.0)):
@@ -1064,8 +1069,8 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
     # input_list.append(Input(shape=(1,len(features)), name = str('all_feature')))
     # fe = concatenate(emb_list)
 
-    # fe = concatenate(input_list)
-    fe = Input(shape=(1,len(features)), name = str('all_feature'))
+    fe = concatenate(emb_list, input_list[-1])
+    # fe = Input(shape=(1,len(features)), name = str('all_feature'))
 
     ############################
     # Old version
@@ -1102,9 +1107,9 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
 
     print (model.summary())
     with timer("h_get_keras_data for train"):
-        x_train = h_get_keras_data2(x_train)
+        x_train = h_get_keras_data(x_train)
     with timer("h_get_keras_data for valid"):
-        x_valid = h_get_keras_data2(x_valid)
+        x_valid = h_get_keras_data(x_valid)
 
     ra_val = RocAucEvaluation(validation_data=(x_valid, y_valid), interval = 1)
     class_weight = {0:.01,1:.99} # magic
@@ -1612,7 +1617,7 @@ def app_train_nn(train, test, model_type, feature_type, data_type):
 
         print("goto test")
         with timer("Goto prepare test Data"):
-            test = h_get_keras_data2(test)
+            test = h_get_keras_data(test)
         with timer("Goto predict test Data"):
             pred = model.predict(test)
 
