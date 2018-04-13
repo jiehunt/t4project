@@ -1054,7 +1054,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
             emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
 
         other_feature = list(set(features) - set(emb_feature) )
-        input_list.append( Input(shape=(1, len(other_feature)), name = str('other_feature')) )
+        input_list.append( Input(shape=(len(other_feature)), name = str('other_feature')) )
         # emb_list.append(input_list[-1])
 
 
