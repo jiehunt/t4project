@@ -1758,13 +1758,13 @@ def my_simple_blend():
     path_0 ='./output/lgb_Usrnewness_9736.csv'
     path_1 ='./output/lgb_Usrnewness_9747.csv'
     path_2 ='./output/wordbatch_fm_ftrl_9752.csv'
-    # path_3 ='./output/set20lgb3foldpranav_lb9693.csv'
+    path_3 ='./output/sub_stacked_9760.csv'
     file0 = pd.read_csv(path_0)
     file1 = pd.read_csv(path_1)
     file2 = pd.read_csv(path_2)
-    # file3 = pd.read_csv(path_3)
-    pred = (file0['is_attributed'] + file1['is_attributed']+ file2['is_attributed']) /3
-    outfile = 'output/blend_lgb9736_lgb9747_fm9752'+ '.csv'
+    file3 = pd.read_csv(path_3)
+    pred = (file0['is_attributed']*3 + file1['is_attributed']*4+ file2['is_attributed']*5+file3['is_attributed']*6 ) /18
+    outfile = 'output/blend_lgb9736_lgb9747_fm9752_stack9760_weight'+ '.csv'
     g_make_single_submission(outfile, pred)
 
 def h_get_oof_file(data_type, model_type, feature_type, use_pse):
@@ -1959,10 +1959,10 @@ def f_get_nano_feature(data_set, feature_type):
         'ip_app_nextClick'                 ,
         'ip_channel_nextClick'             ,
         'ip_os_nextClick'                  ,
-        'prev_identical_clicks'            ,
-        'future_identical_clicks'          ,
-        'prev_app_clicks'                  ,
-        'future_app_clicks'                ,
+        # 'prev_identical_clicks'            ,
+        # 'future_identical_clicks'          ,
+        # 'prev_app_clicks'                  ,
+        # 'future_app_clicks'                ,
         'nip_hh_os'                        ,
         'nip_hh_dev'                       ,
         ]
