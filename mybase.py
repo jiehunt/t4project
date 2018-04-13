@@ -1048,7 +1048,7 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
         emb_feature =  ['app','device','os', 'channel', 'hour',
               'nip_day_test_hh',  'nip_hh_os', 'nip_hh_dev']
 
-        for feature in emb_feature:
+        for n, feature in enumerate(emb_feature):
             input_list.append(Input(shape=[1], name = str(feature)))
             max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
             emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
@@ -1750,16 +1750,16 @@ def my_simple_blend():
     # path_2 ='./output/wordbatch_fm_ftrl.csv'
     # path_3 ='./output/set20lgb3foldpranav_lb9693.csv'
 
-    path_0 ='./output/setfulllgbpranav_lb9699.csv'
-    path_1 ='./output/setfullnnpranav_lb9691.csv'
-    # path_2 ='./output/wordbatch_fm_ftrl.csv'
-    path_3 ='./output/set20lgb3foldpranav_lb9693.csv'
+    path_0 ='./output/lgb_Usrnewness_9736.csv'
+    path_1 ='./output/lgb_Usrnewness_9747.csv'
+    path_2 ='./output/wordbatch_fm_ftrl_9752.csv'
+    # path_3 ='./output/set20lgb3foldpranav_lb9693.csv'
     file0 = pd.read_csv(path_0)
     file1 = pd.read_csv(path_1)
-    # file2 = pd.read_csv(path_2)
-    file3 = pd.read_csv(path_3)
-    pred = (file0['is_attributed'] + file1['is_attributed']+ file3['is_attributed']) /3
-    outfile = 'output/blend_setfulllgb_setfullnn_3fold_noweights'+ '.csv'
+    file2 = pd.read_csv(path_2)
+    # file3 = pd.read_csv(path_3)
+    pred = (file0['is_attributed'] + file1['is_attributed']+ file2['is_attributed']) /3
+    outfile = 'output/blend_lgb9736_lgb9747_fm9752'+ '.csv'
     g_make_single_submission(outfile, pred)
 
 def h_get_oof_file(data_type, model_type, feature_type, use_pse):
