@@ -137,7 +137,8 @@ def h_get_keras_data(dataset):
             X[str(name)] = np.array(dataset[[str(name)]])
 
         other_feature = list(set(columns) - set(emb_feature) )
-        X[str('other_feature')]  = np.array(dataset[other_feature])
+        # X[str('other_feature')]  = np.array(dataset[other_feature])
+        X[str('ip_app_nextClick')]  = np.array(dataset[[str('ip_app_nextClick')]])
         # X[str('other_feature')]  = X[str('other_feature')].reshape((1,len(dataset),len(other_feature)))
     else:
         for name in columns:
@@ -1053,8 +1054,8 @@ def m_nn_model(x_train, y_train, x_valid, y_valid,test_df,model_type, feature_ty
             max_num = np.max([x_train[str(feature)].max(), test_df[str(feature)].max()])+1
             emb_list.append(Embedding(max_num, emb_n)(input_list[n]))
 
-        other_feature = list(set(features) - set(emb_feature) )
-        input_list.append( Input(shape=[len(other_feature)], name = str('other_feature')) )
+        # other_feature = list(set(features) - set(emb_feature) )
+        input_list.append( Input(shape=[1], name = str('ip_app_nextClick')) )
         # emb_list.append(input_list[-1])
 
 
