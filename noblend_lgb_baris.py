@@ -12,7 +12,7 @@ import gc
 import matplotlib.pyplot as plt
 import os
 
-debug=1
+debug=0
 if debug:
     print('*** debug parameter set: this is a test run for debugging purposes ***')
 
@@ -39,6 +39,9 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
         'nthread': 4,
         'verbose': 0,
         'metric':metrics
+        "device": "gpu",
+        "gpu_platform_id": 0,
+        "gpu_device_id": 0,
     }
 
     lgb_params.update(params)
@@ -282,6 +285,9 @@ def DO(frm,to,fileno):
         'colsample_bytree': 0.9,  # Subsample ratio of columns when constructing each tree.
         'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
         'scale_pos_weight':200 # because training data is extremely unbalanced
+        "device": "gpu",
+        "gpu_platform_id": 0,
+        "gpu_device_id": 0,
     }
     (bst,best_iteration) = lgb_modelfit_nocv(params,
                             train_df,
