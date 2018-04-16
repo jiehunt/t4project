@@ -38,7 +38,7 @@ def lgb_modelfit_nocv(params, dtrain, dvalid, predictors, target='target', objec
         'reg_lambda': 0,  # L2 regularization term on weights
         'nthread': 4,
         'verbose': 0,
-        'metric':metrics
+        'metric':metrics,
         "device": "gpu",
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
@@ -284,7 +284,7 @@ def DO(frm,to,fileno):
         'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
         'colsample_bytree': 0.9,  # Subsample ratio of columns when constructing each tree.
         'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
-        'scale_pos_weight':200 # because training data is extremely unbalanced
+        'scale_pos_weight':200, # because training data is extremely unbalanced
         "device": "gpu",
         "gpu_platform_id": 0,
         "gpu_device_id": 0,
