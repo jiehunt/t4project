@@ -87,7 +87,8 @@ def DO(frm,to,fileno):
             }
 
     print('loading train data...',frm,to)
-    train_df = pd.read_csv("./input/train.csv", parse_dates=['click_time'], skiprows=range(1,frm), nrows=to-frm, dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'is_attributed'])
+    # train_df = pd.read_csv("./input/train.csv", parse_dates=['click_time'], skiprows=range(1,frm), nrows=to-frm, dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'is_attributed'])
+    train_df = pd.read_csv("./input/train.csv", parse_dates=['click_time'], dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'is_attributed'])
 
     print('loading test data...')
     if debug:
@@ -306,9 +307,9 @@ def DO(frm,to,fileno):
     del val_df
     gc.collect()
 
-    print('Plot feature importances...')
-    ax = lgb.plot_importance(bst, max_num_features=100)
-    plt.show()
+    # print('Plot feature importances...')
+    # ax = lgb.plot_importance(bst, max_num_features=100)
+    # plt.show()
 
     print("Predicting...")
     sub['is_attributed'] = bst.predict(test_df[predictors],num_iteration=best_iteration)
