@@ -87,8 +87,8 @@ def DO(frm,to,fileno):
             }
 
     print('loading train data...',frm,to)
-    # train_df = pd.read_csv("./input/train.csv", parse_dates=['click_time'], skiprows=range(1,frm), nrows=to-frm, dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'is_attributed'])
-    train_df = pd.read_csv("./input/train.csv", parse_dates=['click_time'], dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'is_attributed'])
+    train_df = pd.read_csv("./input/train.csv", parse_dates=['click_time'], skiprows=range(1,frm), nrows=to-frm, dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'is_attributed'])
+    # train_df = pd.read_csv("./input/train.csv", parse_dates=['click_time'], dtype=dtypes, usecols=['ip','app','device','os', 'channel', 'click_time', 'is_attributed'])
 
     print('loading test data...')
     if debug:
@@ -329,6 +329,8 @@ if debug:
     nchunk=100000
     val_size=10000
 
-to=frm+nchunk
+frm = 0
+# to=frm+nchunk
+to=nrows
 
-sub=DO(frm,to,0)
+sub=DO(frm,to,1)
